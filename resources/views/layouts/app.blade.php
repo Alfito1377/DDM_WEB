@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Jual Benih App</title>
+    <title>PT.Sage Maslahat</title>
 </head>
 <body class="bg-gray-50 flex h-screen overflow-hidden">
 

@@ -66,7 +66,7 @@ class AuthController extends Controller
             } elseif ($roleName === 'manajer') {
                 return redirect()->intended('/manajer/dashboard');
             } elseif ($roleName === 'toko') {
-                return redirect()->intended('/toko/retur');
+                return redirect()->intended('/toko/riwayat');
             }
 
             // Fallback jika role tidak dikenali

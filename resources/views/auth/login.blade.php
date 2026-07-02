@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Jual Benih App</title>
+    <title>Login - PT.Sage Maslahat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
@@ -46,7 +46,7 @@
             <div class="relative z-10">
                 <div class="flex items-center gap-2 mb-10">
                     <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 10-1.414 1.414L12 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path></svg>
-                    <span class="text-2xl font-bold tracking-tight">Jual Benih App</span>
+                    <span class="text-2xl font-bold tracking-tight">PT.Sage Mashlahat Indonesia </span>
                 </div>
                 <h1 class="text-4xl lg:text-5xl font-bold leading-tight mb-4">Efisiensi Distribusi<br>di Ujung Jari.</h1>
                 <p class="text-green-100 text-lg">Platform manajemen alokasi dan retur benih terpadu untuk efisiensi operasional.</p>

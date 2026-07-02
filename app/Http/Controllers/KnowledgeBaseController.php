@@ -78,4 +78,13 @@ class KnowledgeBaseController extends Controller
             ], 500);
         }
     }
+    public function panduanToko()
+    {
+        $documents = KnowledgeBase::with('uploader')
+            ->whereIn('category', ['regulasi', 'panduan'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('toko.panduan', compact('documents'));
+    }
 }

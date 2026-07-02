@@ -35,8 +35,8 @@ class UserSeeder extends Seeder
             [
                 'role_id' => $manajerRoleId,
                 'store_id' => null,
-                'name' => 'Budi Manajer',
-                'email' => 'manajer@gmail.com',
+                'name' => 'Alfito Dwi',
+                'email' => 'titodwimirza@gmail.com',
                 'password' => Hash::make('12345678'),
             ],
             [
