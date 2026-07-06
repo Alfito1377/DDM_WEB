@@ -15,9 +15,29 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\SageApiService;
 
 class ReturnController extends Controller
 {
+    protected $sageApi;
+
+    // 2. Masukkan service melalui Constructor (Dependency Injection)
+    public function __construct(SageApiService $sageApi)
+    {
+        $this->sageApi = $sageApi;
+    }
+
+    /**
+     * Menampilkan form retur
+     */
+   public function create()
+    {
+        // Tarik data langsung dari database LOKAL yang sudah disinkronisasi
+        // Ini jauh lebih cepat dan aman dari error validasi
+        $products = DB::table('products')->orderBy('product_name', 'asc')->get();
+
+        return view('toko.retur-form', compact('products'));
+    }
     /**
      * TAHAP A: Toko Mengajukan Retur (Mendukung Banyak Foto)
      */

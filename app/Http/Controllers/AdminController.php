@@ -14,10 +14,22 @@ class AdminController extends Controller
      */
     public function daftarToko()
     {
-        // Mengambil semua data toko dari database, diurutkan dari yang terbaru
-        $stores = DB::table('stores')->orderBy('created_at', 'desc')->get();
-        
-        return view('admin.daftar-toko', compact('stores'));
+        // 1. Ambil data toko beserta nama sales (menggunakan leftJoin)
+        $stores = DB::table('stores')
+            ->leftJoin('users', 'stores.sales_id', '=', 'users.id')
+            ->select('stores.*', 'users.name as sales_name')
+            ->orderBy('stores.created_at', 'desc')
+            ->get();
+
+        // 2. Ambil data user yang memiliki role 'sales' atau 'admin' untuk dropdown di Modal
+        $salesList = DB::table('users')
+            ->join('roles', 'users.role_id', '=', 'roles.id')
+            ->whereIn('roles.role_name', ['Sales', 'Admin', 'sales', 'admin'])
+            ->select('users.id', 'users.name')
+            ->get();
+
+        // 3. Kirim keduanya ke view daftar-toko
+        return view('admin.daftar-toko', compact('stores', 'salesList'));
     }
 
     /**
@@ -25,9 +37,11 @@ class AdminController extends Controller
      */
     public function storeToko(Request $request)
     {
-        // Validasi Input Form
+        // Validasi Input Form (Sudah ditambahkan owner, phone, dan sales_id)
         $request->validate([
             'store_name' => 'required|string|max:255',
+            'owner_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
             'address' => 'required|string',
             'sales_id' => 'required|integer'
         ]);
@@ -38,10 +52,13 @@ class AdminController extends Controller
             // Buat Token QR Unik (40 Karakter Acak)
             $token = Str::random(40);
 
-            // Simpan data toko ke database
+            // Simpan data toko ke database (Sudah ditambahkan kolom baru)
             $storeId = DB::table('stores')->insertGetId([
                 'store_name' => $request->store_name,
+                'owner_name' => $request->owner_name,
+                'phone_number' => $request->phone_number,
                 'address' => $request->address,
+                'sales_id' => $request->sales_id,
                 'qr_token' => $token,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -49,7 +66,7 @@ class AdminController extends Controller
 
             // Buat Akun (User) untuk toko tersebut agar bisa login
             $tokoRoleId = DB::table('roles')->where('role_name', 'Toko')->value('id');
-            $email = 'toko_' . strtolower(Str::random(5)) . '@jualbenih.co.id'; 
+            $email = 'toko_' . strtolower(Str::random(5)) . '@jualbenih.co.id';
 
             DB::table('users')->insert([
                 'role_id' => $tokoRoleId,
@@ -72,7 +89,6 @@ class AdminController extends Controller
                 'qr_image' => $qrImageUrl,
                 'login_url' => $loginUrl,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -89,14 +105,14 @@ class AdminController extends Controller
     {
         // Mengambil semua data produk dari database
         $products = DB::table('products')->orderBy('created_at', 'desc')->get();
-        
+
         return view('admin.daftar-produk', compact('products'));
     }
 
     /**
      * 4. Memproses Form Tambah Produk Baru
      */
-  public function storeProduk(Request $request)
+    public function storeProduk(Request $request)
     {
         // Validasi input produk
         $request->validate([
@@ -111,7 +127,7 @@ class AdminController extends Controller
                 'product_code' => $productCode,
                 'product_name' => $request->product_name,
                 'barcode' => $request->barcode,
-                'base_stock' => 0, // <--- Tambahkan baris ini untuk mengatasi error
+                'base_stock' => 0, 
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -120,7 +136,6 @@ class AdminController extends Controller
                 'success' => true,
                 'message' => 'Produk berhasil ditambahkan!'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

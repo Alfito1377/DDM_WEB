@@ -14,39 +14,48 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
-                <tr>
-                    <th scope="col" class="px-6 py-4 font-bold">Nama Toko</th>
-                    <th scope="col" class="px-6 py-4 font-bold">Alamat</th>
-                    <th scope="col" class="px-6 py-4 font-bold text-center">Tanggal Daftar</th>
-                    <th scope="col" class="px-6 py-4 font-bold text-center">Aksi & QR Code</th>
+    <table class="w-full text-sm text-left text-gray-600">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th scope="col" class="px-6 py-4 font-bold">Nama Toko</th>
+                <th scope="col" class="px-6 py-4 font-bold">Pemilik</th>
+                <th scope="col" class="px-6 py-4 font-bold">Kontak (WA)</th>
+                <th scope="col" class="px-6 py-4 font-bold">Sales PIC</th>
+                <th scope="col" class="px-6 py-4 font-bold">Alamat</th>
+                <th scope="col" class="px-6 py-4 font-bold text-center">Tanggal Daftar</th>
+                <th scope="col" class="px-6 py-4 font-bold text-center">Aksi & QR Code</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            @forelse ($stores as $toko)
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold text-gray-800">{{ $toko->store_name }}</td>
+                    <td class="px-6 py-4 text-gray-800">{{ $toko->owner_name ?? '-' }}</td>
+                    <td class="px-6 py-4 text-gray-600">{{ $toko->phone_number ?? '-' }}</td>
+                    
+                    <!-- Menampilkan Nama Sales dari hasil query JOIN -->
+                    <td class="px-6 py-4 text-blue-600 font-semibold">{{ $toko->sales_name ?? 'ID: ' . $toko->sales_id }}</td>
+                    
+                    <td class="px-6 py-4 text-gray-600 max-w-xs truncate" title="{{ $toko->address }}">{{ $toko->address }}</td>
+                    <td class="px-6 py-4 text-center">{{ \Carbon\Carbon::parse($toko->created_at)->format('d M Y') }}</td>
+                    <td class="px-6 py-4 text-center">
+                        @php
+                            $loginUrl = urlencode(url('/login/qr/' . $toko->qr_token));
+                            $qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $loginUrl;
+                        @endphp
+                        <button onclick="showQR('{{ $toko->store_name }}', '{{ $qrImage }}')" class="px-4 py-1.5 border border-green-200 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 transition">
+                            Lihat QR Code
+                        </button>
+                    </td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse ($stores as $toko)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 font-bold text-gray-800">{{ $toko->store_name }}</td>
-                        <td class="px-6 py-4 text-gray-600 max-w-xs truncate" title="{{ $toko->address }}">{{ $toko->address }}</td>
-                        <td class="px-6 py-4 text-center">{{ \Carbon\Carbon::parse($toko->created_at)->format('d M Y') }}</td>
-                        <td class="px-6 py-4 text-center">
-                            @php
-                                $loginUrl = urlencode(url('/login/qr/' . $toko->qr_token));
-                                $qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $loginUrl;
-                            @endphp
-                            <button onclick="showQR('{{ $toko->store_name }}', '{{ $qrImage }}')" class="px-4 py-1.5 border border-green-200 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 transition">
-                                Lihat QR Code
-                            </button>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Belum ada toko yang terdaftar.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            @empty
+                <tr>
+                    <!-- Colspan diubah menjadi 7 menyesuaikan jumlah kolom yang baru -->
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">Belum ada toko yang terdaftar.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
 </div>
 
 <div id="registerModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -66,14 +75,35 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1.5">Nama Toko</label>
                     <input type="text" name="store_name" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Contoh: Toko Tani Makmur">
                 </div>
+
+                <!-- 👇 TAMBAHAN BARU: Nama Pemilik -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1.5">Nama Pemilik Toko</label>
+                    <input type="text" name="owner_name" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Masukkan nama lengkap pemilik">
+                </div>
+
+                <!-- 👇 TAMBAHAN BARU: Nomor WhatsApp -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1.5">No. WhatsApp / Telepon</label>
+                    <input type="number" name="phone_number" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Contoh: 081234567890">
+                </div>
+
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1.5">Alamat Lengkap</label>
                     <textarea name="address" rows="3" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition resize-none" placeholder="Jalan, Kecamatan, Kota..."></textarea>
                 </div>
+
+                <!-- 👇 PERUBAHAN: Input Sales diubah menjadi Dropdown Select -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1.5">ID Sales Penanggung Jawab</label>
-                    <input type="number" name="sales_id" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Masukkan ID Sales (Contoh: 2)">
+                    <label class="block text-sm font-bold text-gray-700 mb-1.5">Sales Penanggung Jawab (PIC)</label>
+                    <select name="sales_id" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white">
+                        <option value="" disabled selected>-- Pilih Nama Sales --</option>
+                        @foreach($salesList as $sales)
+                            <option value="{{ $sales->id }}">{{ $sales->name }} (ID: {{ $sales->id }})</option>
+                        @endforeach
+                    </select>
                 </div>
+                
                 <div class="pt-4">
                     <button type="submit" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition shadow-md">
                         Simpan & Generate QR Code

@@ -7,6 +7,7 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\ReturnController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Services\SageApiService;
 
 // 1. LOGIN & AUTH
 Route::get('/', function () { return view('auth.login'); })->name('login');
@@ -63,4 +64,22 @@ Route::get('/dev-login-toko', function () {
     }
 
     return 'Gagal bypass: User dengan role "toko" tidak ditemukan di database Anda.';
+});
+
+Route::get('/test-login-sage', function (SageApiService $sageApi) {
+    // Memanggil fungsi getToken() yang sudah Anda buat
+    $token = $sageApi->getToken();
+
+    if ($token) {
+        return response()->json([
+            'status' => 'SUKSES',
+            'pesan' => 'Koneksi ke API Sage berhasil!',
+            'token' => $token
+        ]);
+    }
+
+    return response()->json([
+        'status' => 'GAGAL',
+        'pesan' => 'Gagal mendapatkan token. Silakan cek kredensial di file .env atau lihat log error.'
+    ], 500);
 });
