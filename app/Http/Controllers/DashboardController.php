@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http; // Pastikan ini di-import
+use Illuminate\Support\Facades\Log;
 use App\Models\KnowledgeBase;
 
 class DashboardController extends Controller
@@ -48,6 +50,78 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->first();
 
-        return view('manajer.dashboard', compact('stats', 'reasonStats', 'storeStats', 'docStats', 'latestCsv'));
+        // =========================================================================
+        // PROSES DATA HISTORIS (GUDANG LOKAL)
+        // =========================================================================
+        $turnovers = DB::table('turnovers')
+            ->selectRaw('DATE_FORMAT(doc_date, "%Y-%m-%d") as ds, SUM(total_kg) as y') // Format diubah sesuai standar Prophet
+            ->groupBy('ds')
+            ->orderBy('ds', 'asc')
+            ->get();
+
+        $historicalLabels = [];
+        $historicalData = [];
+        $payloadToPython = []; // Array paket data yang akan dikirim ke Python
+
+        foreach ($turnovers as $to) {
+            $historicalLabels[] = date('M Y', strtotime($to->ds)); 
+            $historicalData[] = (float) $to->y;
+            
+            // Masukkan data ke dalam paket
+            $payloadToPython[] = [
+                'ds' => $to->ds,
+                'y' => (float) $to->y
+            ];
+        }
+
+        // =========================================================================
+        // PROSES DATA PREDIKSI (KONSUMSI API PYTHON PROPHET)
+        // =========================================================================
+        $forecastLabels = [];
+        $forecastData = [];
+
+        try {
+            // PERUBAHAN: Menggunakan POST dan mengirimkan data historis secara langsung
+            $response = Http::timeout(60)->post('http://127.0.0.1:8001/predict-turnover', [
+                'months' => 6,
+                'historical_data' => $payloadToPython
+            ]);
+
+            if ($response->successful() && $response->json('success')) {
+                $predictions = $response->json('data');
+                foreach ($predictions as $pred) {
+                    $forecastLabels[] = $pred['bulan'];
+                    $forecastData[] = (float) $pred['prediksi_kg'];
+                }
+            } else {
+                Log::error('API Python merespons error: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Gagal terhubung ke AI Engine (Python): ' . $e->getMessage());
+        }
+
+        // Gabungkan label sumbu X (Bulan Historis + Bulan Masa Depan)
+        $mergedLabels = array_merge($historicalLabels, $forecastLabels);
+
+        // Padding array agar grafik Chart.js merender garis di posisi yang tepat
+        $finalHistorical = array_merge($historicalData, array_fill(0, count($forecastData), null));
+        
+        // Agar garis prediksi menyambung dari titik terakhir historis
+        $padding = array_fill(0, count($historicalData), null);
+        if (!empty($historicalData)) {
+            $padding[count($historicalData) - 1] = end($historicalData);
+        }
+        $finalForecast = array_merge($padding, $forecastData);
+
+        return view('manajer.dashboard', compact(
+            'stats', 
+            'reasonStats', 
+            'storeStats', 
+            'docStats', 
+            'latestCsv',
+            'mergedLabels',
+            'finalHistorical',
+            'finalForecast'
+        ));
     }
 }

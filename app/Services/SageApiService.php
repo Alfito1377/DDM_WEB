@@ -14,83 +14,124 @@ class SageApiService
 
     public function __construct()
     {
-        $this->baseUrl = env('SAGE_API_URL');
+        $this->baseUrl = env('SAGE_API_URL', 'https://app.sage.biz.id/api');
         $this->email = env('SAGE_API_EMAIL'); 
         $this->password = env('SAGE_API_PASSWORD');
     }
 
     /**
-     * Fungsi untuk melakukan Login dan mengambil Token
+     * 1. FUNGSI LOGIN & TOKEN
      */
     public function getToken()
     {
-        // Cek apakah token masih ada di cache
         if (Cache::has('sage_api_token')) {
             return Cache::get('sage_api_token');
         }
 
         try {
             $response = Http::withoutVerifying()
-                ->withHeaders([
-                    'Accept' => 'application/json',
-                ])
+                ->withHeaders(['Accept' => 'application/json'])
                 ->post("{$this->baseUrl}/login", [
                     'email'    => $this->email,
                     'password' => $this->password,
                 ]);
 
-            if ($response->successful()) {
-                // PERBAIKAN: Mengambil token dari dalam objek 'data'
-                $token = $response->json('data.token'); 
-                
-                if ($token) {
-                    Cache::put('sage_api_token', $token, now()->addMinutes(120));
-                    return $token;
-                }
+            if ($response->successful() && $token = $response->json('data.token')) {
+                Cache::put('sage_api_token', $token, now()->addMinutes(120));
+                return $token;
             }
 
-            Log::error('API Sage merespons tapi token tidak ditemukan: ' . $response->body());
+            Log::error('API Sage Login Error: ' . $response->body());
             return null;
-
         } catch (\Exception $e) {
-            Log::error('Error koneksi ke SAGE API: ' . $e->getMessage());
+            Log::error('API Sage Connection Error: ' . $e->getMessage());
             return null;
         }
     }
-    /**
-     * Fungsi untuk mengambil data Produk menggunakan Token
-     */
-    /**
-     * Fungsi untuk mengambil data Variety
-     */
-    public function getVarieties()
+
+
+    private function postRequest($endpoint, $payload = [])
     {
         $token = $this->getToken();
-
-        if (!$token) {
-            return [];
-        }
+        if (!$token) return [];
 
         try {
-            // PERUBAHAN: Menggunakan POST dan penyesuaian URL endpoint
             $response = Http::withoutVerifying()
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Authorization' => 'Bearer ' . $token,
                 ])
-                ->post("https://app.sage.biz.id/api/v1/mst/variety"); // Sesuai dokumentasi
+                ->post("{$this->baseUrl}/{$endpoint}", $payload);
 
             if ($response->successful()) {
-                return $response->json('data'); 
+                return $response->json('data') ?? [];
             }
 
-            // Tambahan log error agar jika gagal lagi, kita tahu alasannya
-            \Illuminate\Support\Facades\Log::error('Gagal fetch variety API SAGE: ' . $response->body());
+            Log::error("Gagal fetch {$endpoint}: " . $response->body());
             return [];
-
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error saat fetch variety: ' . $e->getMessage());
+            Log::error("Error fetch {$endpoint}: " . $e->getMessage());
             return [];
         }
+    }
+
+    public function getVarieties($page = 1, $limit = 100)
+    {
+        return $this->postRequest('v1/mst/variety', ['page' => $page, 'limit' => $limit]);
+    }
+
+    /** 3. Master Product */
+    public function getProducts($page = 1, $limit = 100)
+    {
+        return $this->postRequest('v1/mst/product', ['page' => $page, 'limit' => $limit]);
+    }
+
+    /** 4. Master Batch */
+    public function getBatches($page = 1, $limit = 100, $variety_id = null)
+    {
+        $payload = ['page' => $page, 'limit' => $limit];
+        if ($variety_id) $payload['variety_id'] = $variety_id;
+        return $this->postRequest('v1/mst/batch', $payload);
+    }
+
+    /** 5. Master Lot No */
+    public function getLotNumbers($page = 1, $limit = 100)
+    {
+        return $this->postRequest('v1/mst/lotno', ['page' => $page, 'limit' => $limit]);
+    }
+
+    /** 6. Master Location */
+    public function getLocations($page = 1, $limit = 100)
+    {
+        return $this->postRequest('v1/mst/location', ['page' => $page, 'limit' => $limit]);
+    }
+
+    /** 7. Transaksi Turn Over (TOS) Header */
+    public function getTurnovers($page = 1, $limit = 100, $location_id = null)
+    {
+        $payload = ['page' => $page, 'limit' => $limit];
+        if ($location_id) $payload['location_id'] = $location_id;
+        return $this->postRequest('v1/whs/tos', $payload);
+    }
+
+    /** 8. Transaksi Turn Over (TOS) Detail */
+    public function getTurnoverDetail($tos_id)
+    {
+        // Wajib mengirimkan tos_id sesuai dokumentasi
+        return $this->postRequest('v1/whs/tos/detail', ['tos_id' => $tos_id]);
+    }
+
+    /** 9. Transaksi Delivery Header */
+    public function getDeliveries($page = 1, $limit = 100)
+    {
+        // Spasi pada "whs/ delivery" sudah diperbaiki di sini
+        return $this->postRequest('v1/whs/delivery', ['page' => $page, 'limit' => $limit]);
+    }
+
+    /** 10. Transaksi Delivery Detail */
+    public function getDeliveryDetail($delivery_id)
+    {
+        // Wajib mengirimkan delivery_id sesuai dokumentasi
+        return $this->postRequest('v1/whs/delivery/detail', ['delivery_id' => $delivery_id]);
     }
 }

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class SyncVarietyData extends Command
 {
-    // Nama perintah yang akan diketik di terminal
     protected $signature = 'sage:sync-variety';
     protected $description = 'Menarik data benih (Variety) dari API SAGE dan menyimpannya ke database lokal';
 
@@ -25,19 +24,19 @@ class SyncVarietyData extends Command
 
         $count = 0;
         foreach ($varieties as $item) {
-            // Kita abaikan jika data tidak aktif (IsActive = 0)
             if (isset($item['IsActive']) && $item['IsActive'] == "0") {
                 continue;
             }
 
-            // Simpan atau update ke tabel products lokal
-            // updateOrInsert akan mengecek: jika barcode sudah ada, maka update namanya. Jika belum, buat baru.
+            // PERBAIKAN: Melengkapi semua kolom yang wajib ada di tabel products
             DB::table('products')->updateOrInsert(
-                ['barcode' => $item['VarietyCode']], // Acuan pencarian
+                ['barcode' => $item['VarietyCode']], 
                 [
+                    'product_code' => 'PRD-' . $item['VarietyCode'], // Format disamakan dengan contoh DB Anda
                     'product_name' => $item['VarietyName'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'base_stock'   => 0, // Mencegah error jika base_stock tidak punya default value
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
                 ]
             );
             $count++;

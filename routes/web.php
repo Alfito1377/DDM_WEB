@@ -8,6 +8,7 @@ use App\Http\Controllers\ReturnController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Services\SageApiService;
+use App\Http\Controllers\Api\ForecastingController;
 
 // 1. LOGIN & AUTH
 Route::get('/', function () { return view('auth.login'); })->name('login');
@@ -51,6 +52,10 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::post('/profil/ganti-password', [ReturnController::class, 'updatePasswordToko']);
 });
 
+Route::get('/api/historical-turnover', [ForecastingController::class, 'getHistoricalTurnover']);
+
+
+
 /// sementara untuk cek toko
 Route::get('/dev-login-toko', function () {
     $user = \App\Models\User::whereHas('role', function($query) {
@@ -67,7 +72,6 @@ Route::get('/dev-login-toko', function () {
 });
 
 Route::get('/test-login-sage', function (SageApiService $sageApi) {
-    // Memanggil fungsi getToken() yang sudah Anda buat
     $token = $sageApi->getToken();
 
     if ($token) {
@@ -82,4 +86,9 @@ Route::get('/test-login-sage', function (SageApiService $sageApi) {
         'status' => 'GAGAL',
         'pesan' => 'Gagal mendapatkan token. Silakan cek kredensial di file .env atau lihat log error.'
     ], 500);
+});
+
+Route::get('/test-sage-api', function (SageApiService $sageApi) {
+    $products = $sageApi->getProducts(1, 5);
+    return response()->json($products);
 });

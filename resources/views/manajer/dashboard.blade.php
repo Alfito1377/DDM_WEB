@@ -65,6 +65,20 @@
         </div>
     </div>
 
+    <!-- TAMBAHAN: GRAFIK TURN OVER DARI API SAGE -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-emerald-500">
+        <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2 mb-4">
+            <span class="p-1.5 bg-emerald-50 rounded-lg text-emerald-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </span>
+            Tren Turn Over (Barang Masuk) Gudang Pusat SAGE
+        </h2>
+        <div class="relative w-full min-h-[300px]">
+            <canvas id="turnoverChart"></canvas>
+        </div>
+    </div>
+    <!-- AKHIR TAMBAHAN -->
+
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-blue-500">
         <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
             <div>
@@ -113,18 +127,13 @@
 </div>
 
 <script>
-    // Membungkus seluruh script agar berjalan setelah DOM siap
     document.addEventListener('DOMContentLoaded', function() {
         const colorPalette = ['#16a34a', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#14b8a6', '#f43f5e'];
 
-        // 1. Inisialisasi Grafik Internal
+        // Inisialisasi Semua Grafik
         initInternalCharts();
-
-        // 2. Inisialisasi Grafik CSV Dinamis
+        initTurnoverChart(); // Panggilan untuk fungsi baru
         initDynamicCsvChart();
-
-
-        // --- FUNGSI-FUNGSI BANTUAN --- //
 
         function initInternalCharts() {
             // Chart Distribusi Alasan Retur
@@ -163,7 +172,7 @@
                         datasets: [{ 
                             label: 'Jumlah Pengajuan', 
                             data: Object.values(storeData), 
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)', // Warna biru transparan
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)', 
                             borderColor: '#3b82f6', 
                             borderWidth: 2, 
                             borderRadius: 6,
@@ -183,6 +192,63 @@
             }
         }
 
+        // FUNGSI BARU: Inisialisasi Grafik Turn Over
+       function initTurnoverChart() {
+            // Menerima data gabungan dari Controller
+            const mergedLabels = @json($mergedLabels ?? []);
+            const dataHistorical = @json($finalHistorical ?? []);
+            const dataForecast = @json($finalForecast ?? []);
+
+            if (mergedLabels.length > 0) {
+                new Chart(document.getElementById('turnoverChart'), {
+                    type: 'line',
+                    data: {
+                        labels: mergedLabels, // Sumbu X gabungan
+                        datasets: [
+                            {
+                                label: 'Data Riwayat Nyata (Kg)',
+                                data: dataHistorical,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                                borderColor: '#10b981', // Garis Hijau Emerald untuk data asli
+                                borderWidth: 3,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#10b981',
+                                pointRadius: 4,
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Prediksi Tren Prophet (Kg)',
+                                data: dataForecast,
+                                backgroundColor: 'transparent',
+                                borderColor: '#f59e0b', // Garis Oranye untuk data masa depan
+                                borderWidth: 3,
+                                borderDash: [6, 6], // Membuat efek garis putus-putus (simbol prediksi)
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#f59e0b',
+                                pointRadius: 4,
+                                fill: false,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: true, position: 'top', labels: { usePointStyle: true } },
+                            tooltip: { backgroundColor: 'rgba(17, 24, 39, 0.9)', padding: 12 }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
         function initDynamicCsvChart() {
             const latestCsvUrl = @json($latestCsv ? asset('storage/' . $latestCsv->file_path) : null);
 
@@ -190,7 +256,7 @@
                 Papa.parse(latestCsvUrl, {
                     download: true,
                     header: true,
-                    skipEmptyLines: true, // Otomatis melewati baris kosong
+                    skipEmptyLines: true,
                     complete: function(results) {
                         const data = results.data.filter(row => Object.keys(row).length > 1); 
                         
@@ -209,7 +275,7 @@
                                     datasets: [{
                                         label: valueKey,
                                         data: chartValues,
-                                        backgroundColor: 'rgba(139, 92, 246, 0.1)', // Warna ungu
+                                        backgroundColor: 'rgba(139, 92, 246, 0.1)', 
                                         borderColor: '#8b5cf6',
                                         borderWidth: 3,
                                         pointBackgroundColor: '#ffffff',
