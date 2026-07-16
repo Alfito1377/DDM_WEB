@@ -25,7 +25,7 @@ Route::middleware(['auth'])->group(function () {
 
 // 3. AKSES KHUSUS SUPERADMIN
 Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
-    Route::get('/register-toko', function () { return redirect('/superadmin/daftar-toko'); });
+    Route::get('/register-toko', function () { return redirect('/superadmin/daftar-customer'); });
     Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
     Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
     Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
