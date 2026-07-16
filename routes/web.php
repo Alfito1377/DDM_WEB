@@ -23,21 +23,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chatbot', function () { return view('shared.chatbot'); });
 });
 
-// 3. AKSES KHUSUS ADMIN
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/register-toko', function () { return redirect('/admin/daftar-toko'); });
-    Route::get('/daftar-toko', [AdminController::class, 'daftarToko']);
-    Route::post('/register-toko', [AdminController::class, 'storeToko']);
-    Route::get('/produk', [AdminController::class, 'daftarProduk']);
-    Route::post('/produk', [AdminController::class, 'storeProduk']);
-});
-
-// 4. AKSES KHUSUS MANAJER
-Route::middleware(['auth', 'role:manajer'])->prefix('manajer')->group(function () {
-    Route::get('/dashboard', function () { return view('manajer.dashboard'); });
-    Route::get('/dashboard', [DashboardController::class, 'indexManager']);
+// 3. AKSES KHUSUS SUPERADMIN
+Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
+    Route::get('/register-toko', function () { return redirect('/superadmin/daftar-toko'); });
+    Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
+    Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
+    Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
+    Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
+    Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
+    Route::get('/pengiriman', [AdminController::class, 'daftarPengiriman']);
+    Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
     Route::get('/retur', [ReturnController::class, 'indexManager']);
     Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
+});
+
+// 4. AKSES KHUSUS ADMIN / MANAJER
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', function () { return view('manajer.dashboard'); });
+    Route::get('/dashboard', [DashboardController::class, 'indexManager']);
 });
 
 // 5. AKSES KHUSUS TOKO

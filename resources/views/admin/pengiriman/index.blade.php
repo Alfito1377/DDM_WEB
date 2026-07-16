@@ -3,12 +3,13 @@
 @section('content')
 <!-- Memanggil Library HTML5 QR Code (Diletakkan di atas agar siap dipakai) -->
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Master Data Produk</h1>
-            <p class="text-sm text-gray-500 mt-1">Kelola katalog benih dan cetak barcode SKU untuk keperluan distribusi.</p>
+            <h1 class="text-2xl font-bold text-gray-800">Master Data Pengiriman</h1>
+            <p class="text-sm text-gray-500 mt-1">Kelola data pengiriman barang.</p>
         </div>
         <button onclick="openProductModal()" class="bg-green-600 text-white text-sm font-bold px-4 py-2.5 rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -166,7 +167,15 @@
 
     // --- LOGIKA MODAL & FORM ---
     function openProductModal() {
-        document.getElementById('productModal').classList.remove('hidden');
+        Swal.fire({
+            title: "Apakah anda ingin memperbarui data pengiriman?",
+            showCancelButton: true,
+            confirmButtonText: "Iya!",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // cek pengiriman aktif
+            };
+        });
     }
 
     function closeProductModal() {

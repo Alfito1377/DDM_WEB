@@ -17,13 +17,13 @@
         <nav class="p-4 space-y-1.5 overflow-y-auto">
             @php
                 $userRole = strtolower(Auth::user()->role->role_name ?? '');
-                $prefix = $userRole === 'admin' ? '/admin' : ($userRole === 'manajer' ? '/manajer' : '/toko');
+                $prefix = $userRole === 'superadmin' ? '/superadmin' : ($userRole === 'admin' ? '/admin' : '');
             @endphp
 
-            {{-- MENU ADMIN --}}
-            @if ($userRole === 'admin')
-                <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Menu Admin</p>
-                <a href="{{ $prefix }}/daftar-toko"
+            {{-- MENU SUPERADMIN --}}
+            @if ($userRole === 'superadmin')
+                <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Menu Super Admin</p>
+                <a href="{{ $prefix }}/daftar-customer"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
                     <svg class="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
@@ -31,32 +31,16 @@
                             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
                         </path>
                     </svg>
-                    Daftar Mitra Toko
+                    Daftar Mitra
                 </a>
-                <a href="{{ $prefix }}/produk"
+                <a href="{{ $prefix }}/pengiriman"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
                     <svg class="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
-                    Kelola Produk Benih
-                </a>
-            @endif
-
-            {{-- MENU MANAJER --}}
-            @if ($userRole === 'manajer')
-                <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Menu Manajer</p>
-                <a href="{{ $prefix }}/dashboard"
-                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-                    </svg>
-                    Dashboard Analitik
+                    Kelola Pengiriman
                 </a>
                 <a href="{{ $prefix }}/retur"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
@@ -67,6 +51,22 @@
                         </path>
                     </svg>
                     Daftar Retur
+                </a>
+            @endif
+
+            {{-- MENU ADMIN --}}
+            @if ($userRole === 'admin')
+                <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Menu Admin</p>
+                <a href="{{ $prefix }}/dashboard"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                    </svg>
+                    Dashboard Analitik
                 </a>
             @endif
 

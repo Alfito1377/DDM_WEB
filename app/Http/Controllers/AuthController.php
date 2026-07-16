@@ -61,12 +61,10 @@ class AuthController extends Controller
             $roleName = strtolower(Auth::user()->role->role_name ?? '');
 
             // 4. Arahkan (redirect) ke halaman sesuai role masing-masing
-            if ($roleName === 'admin') {
-                return redirect()->intended('/admin/register-toko');
-            } elseif ($roleName === 'manajer') {
-                return redirect()->intended('/manajer/dashboard');
-            } elseif ($roleName === 'toko') {
-                return redirect()->intended('/toko/riwayat');
+            if ($roleName === 'superadmin') {
+                return redirect()->intended('/superadmin/register-toko');
+            } elseif ($roleName === 'admin') {
+                return redirect()->intended('/admin/dashboard');
             }
 
             // Fallback jika role tidak dikenali
