@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DriversModel;
 use App\Models\JenisMitraModel;
+use App\Models\LogisticModel;
 use App\Models\StoresModel;
+use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +14,83 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+
+    /**
+     * Variabel
+     */
+    public $bulan = [
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember'
+    ];
+
+    /**
+     * Format Data Tanggal
+     */
+    function formatDate($date)
+    {
+        if($date == null) {
+            return "-";
+        }
+        $date = explode(" ", $date);
+        $tanggal = explode("-", $date[0]);
+        $jam = explode(":", $date[1]);
+        return $tanggal[2] . " " . $this->bulan[(int)$tanggal[1]] . " " . $tanggal[0] . " " . $jam[0] . ":" . $jam[1] . ":" . $jam[2];
+    }
+
+    /**
+     * Format Data Tanggal
+     */
+    function formatStatus($status)
+    {
+        if($status == null) {
+            return "-";
+        }
+
+        if($status == 'pending') {
+            return [
+                'label' => 'Pending',
+                'color' => 'bg-yellow-100 text-yellow-800'
+            ];
+        } else if($status == 'packed') {
+            return [
+                'label' => 'Packed',
+                'color' => 'bg-blue-100 text-blue-800'
+            ];
+        } else if($status == 'out_of_transit') {
+            return [
+                'label' => 'Out of Transit',
+                'color' => 'bg-purple-100 text-purple-800'
+            ];
+        } else if($status == 'in_transit') {
+            return [
+                'label' => 'In Transit',
+                'color' => 'bg-yellow-100 text-yellow-800'
+            ];
+        } else if($status == 'completed') {
+            return [
+                'label' => 'Completed',
+                'color' => 'bg-green-100 text-green-800'
+            ];
+        } else if($status == 'cancelled') {
+            return [
+                'label' => 'Cancelled',
+                'color' => 'bg-red-100 text-red-800'
+            ];
+        }
+        return $status;
+    }
+
+
     /**
      * 1. Menampilkan Halaman Daftar Mitra
      */
@@ -89,10 +169,33 @@ class AdminController extends Controller
      */
     public function daftarPengiriman()
     {
-        // Mengambil semua data produk dari database
-        $products = DB::table('products')->orderBy('created_at', 'desc')->get();
+        // Mengambil semua data pengiriman dari database
+        $logistics = LogisticModel::latest()->get();
 
-        return view('admin.pengiriman.index', compact('products'));
+        foreach ($logistics as $logistic) {
+            $logistic->departedAt = $this->formatDate($logistic->departedAt);
+            $logistic->status = $this->formatStatus($logistic->status);
+            if ($logistic->id_mitra) {
+                $mitra = StoresModel::find($logistic->id_mitra);
+                $logistic->mitra = $mitra;
+            } else {
+                $logistic->mitra = null;
+            }
+            if($logistic->driverId) {
+                $driver = DriversModel::where('id_driver', $logistic->driverId)->first();
+                $logistic->driver = $driver;
+            } else {
+                $logistic->driver = null;
+            }
+            if($logistic->vehicleId) {
+                $vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
+                $logistic->vehicle = $vehicle;
+            } else {
+                $logistic->vehicle = null;
+            }
+        }
+
+        return view('admin.pengiriman.index', compact('logistics'));
     }
 
     /**
@@ -201,6 +304,48 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data customer berhasil dihapus.'
+        ]);
+    }
+
+    /**
+     * 8. Get detail pengiriman by ID
+     */
+    public function detailPengiriman($id)
+    {
+        // Mengambil semua data pengiriman dari database
+        $logistics = LogisticModel::find($id);
+
+        if (!$logistics) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengiriman tidak ditemukan.'
+            ], 404);
+        }
+
+        $logistics->departedAt = $this->formatDate($logistics->departedAt);
+        $logistics->status = $this->formatStatus($logistics->status);
+        if ($logistics->id_mitra) {
+            $mitra = StoresModel::find($logistics->id_mitra);
+            $logistics->mitra = $mitra;
+            $logistics->mitra->jenis_mitra = JenisMitraModel::find($mitra->jenis_mitra_id)->nama_jenis_mitra;
+        } else {
+            $logistics->mitra = null;
+        }
+        if($logistics->driverId) {
+            $driver = DriversModel::where('id_driver', $logistics->driverId)->first();
+            $logistics->driver = $driver;
+        } else {
+            $logistics->driver = null;
+        }
+        if($logistics->vehicleId) {
+            $vehicle = VehicleModel::where('id_vehicle', $logistics->vehicleId)->first();
+            $logistics->vehicle = $vehicle;
+        } else {
+            $logistics->vehicle = null;
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $logistics
         ]);
     }
 }

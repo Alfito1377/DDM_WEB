@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
     Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
     Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
     Route::get('/pengiriman', [AdminController::class, 'daftarPengiriman']);
+    Route::get('/pengiriman/{id}/detail', [AdminController::class, 'detailPengiriman']);
     Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
     Route::get('/retur', [ReturnController::class, 'indexManager']);
     Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
