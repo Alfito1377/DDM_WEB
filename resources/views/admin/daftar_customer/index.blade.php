@@ -38,9 +38,9 @@
                     <td class="px-6 py-4 text-center">{{ \Carbon\Carbon::parse($toko->created_at)->format('d M Y') }}</td>
                     <td class="px-6 py-4 text-center">
                         @php
-                            $loginUrl = urlencode(url('/login/qr/' . $toko->qr_token_login));
+                            $loginUrl = urlencode(url('/login/qr?token=' . $toko->qr_token_login));
                             $qrImageLogin = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $loginUrl;
-                            $checkpointUrl = urlencode(url('/login/qr/checkpoint/' . $toko->qr_token_checkpoint));
+                            $checkpointUrl = urlencode(url('/login/qr/checkpoint?token=' . $toko->qr_token_checkpoint));
                             $qrImageCheckpoint = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $checkpointUrl;
                         @endphp
                         <div class="flex items-center justify-center gap-2">
@@ -183,7 +183,7 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="flex flex-col items-center gap-6 mb-6">
+        <div class="flex justify-center items-center gap-6 mb-6">
             <div class="flex flex-col items-center mb-4">
                 <h1 class="font-bold text-lg text-gray-800">QR Code Login</h1>
                 <img id="modalQrImageLogin" src="" alt="QR Code Login" class="w-48 h-48 object-contain">

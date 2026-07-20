@@ -9,6 +9,15 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
+
+    /**
+     * Proses data dari qr checkpoint
+     */
+    public function qrLoginCheckpoint(Request $request) {
+        // dd($request->all());
+
+        return view('users.checkpoint.index');
+    }
     /**
      * Memproses data dari form login
      */

@@ -12,7 +12,8 @@ use App\Http\Controllers\Api\ForecastingController;
 
 // 1. LOGIN & AUTH
 Route::get('/', function () { return view('auth.login'); })->name('login');
-Route::get('/login/qr/{token}', [AuthController::class, 'qrLogin'])->name('login.qr');
+Route::get('/login/qr/', [AuthController::class, 'qrLogin'])->name('login.qr');
+Route::get('/login/qr/checkpoint', [AuthController::class, 'qrLoginCheckpoint'])->name('login.qr.checkpoint');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
