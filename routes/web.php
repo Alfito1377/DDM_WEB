@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ForecastingController;
 Route::get('/', function () { return view('auth.login'); })->name('login');
 Route::get('/login/qr/', [AuthController::class, 'qrLogin'])->name('login.qr');
 Route::get('/login/qr/checkpoint', [AuthController::class, 'qrLoginCheckpoint'])->name('login.qr.checkpoint');
+Route::post('/login/qr/checkpoint', [AuthController::class, 'storeCheckpoint'])->name('login.qr.checkpoint.post');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

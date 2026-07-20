@@ -85,35 +85,39 @@ class LogisticSeeder extends Seeder
         ];
 
         $statuses = ['pending', 'packed', 'out_of_transit', 'in_transit', 'completed', 'cancelled'];
-        $jenisMitraIds = DB::table('jenis_mitra')->pluck('id')->toArray();
+        // 3. Clear existing logistics to avoid clutter
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('logistic')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        for ($i = 0; $i < 10; $i++) {
-            $status = $statuses[$i % count($statuses)];
-            
-            // Set departedAt dan arrivedAt berdasarkan status
-            $departedAt = null;
-            $arrivedAt = null;
+        // 4. Create dummy data guaranteed per store (2 active logistics per store)
+        $stores = DB::table('stores')->get();
+        $totalCounter = 0;
+        
+        foreach ($stores as $store) {
+            // Pilih satu kurir (driver) yang sama untuk kedua paket di toko ini
+            $assignedDriverId = $driverIds[$totalCounter % count($driverIds)];
 
-            if (in_array($status, ['in_transit', 'completed'])) {
+            // Untuk tiap store, buat 2 data pengiriman berstatus 'in_transit' dengan KURIR YANG SAMA
+            for ($i = 0; $i < 2; $i++) {
                 $departedAt = Carbon::now()->subHours(rand(1, 48));
-            }
-            if ($status === 'completed' && $departedAt) {
-                $arrivedAt = (clone $departedAt)->addHours(rand(2, 12));
-            }
 
-            DB::table('logistic')->insert([
-                'id_logistic' => (string) Str::uuid(),
-                'shipmentId' => (string) Str::uuid(),
-                'status' => $status,
-                'id_mitra' => !empty($jenisMitraIds) ? $jenisMitraIds[$i % count($jenisMitraIds)] : null,
-                'destination' => $destinations[$i],
-                'driverId' => $driverIds[$i],
-                'vehicleId' => $vehicleIds[$i],
-                'departedAt' => $departedAt,
-                'arrivedAt' => $arrivedAt,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                DB::table('logistic')->insert([
+                    'id_logistic' => (string) Str::uuid(),
+                    'shipmentId' => 'SHP-' . strtoupper(Str::random(8)),
+                    'status' => 'in_transit',
+                    'id_mitra' => $store->id,
+                    'destination' => $destinations[$totalCounter % count($destinations)],
+                    'driverId' => $assignedDriverId, // Memastikan driver sama
+                    'vehicleId' => $vehicleIds[$totalCounter % count($vehicleIds)],
+                    'departedAt' => $departedAt,
+                    'arrivedAt' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                
+                $totalCounter++;
+            }
         }
     }
 }
