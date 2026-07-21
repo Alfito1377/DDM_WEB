@@ -76,7 +76,7 @@ class AuthController extends Controller
             ->where('driverId', $driver->id_driver)
             ->whereIn('id_logistic', $selectedShipments)
             ->update([
-                'status' => 'completed',
+                'status' => 'out_of_transit', // Driver sudah sampai, tapi toko belum bongkar muat
                 'arrivedAt' => now(),
                 'updated_at' => now(),
             ]);
@@ -97,37 +97,54 @@ class AuthController extends Controller
     /**
      * Memproses data dari form login
      */
-    public function qrLogin($token)
+    public function qrLogin(Request $request, $token = null)
     {
-        // 1. Cari toko berdasarkan qr_token di tabel stores
-        $store = DB::table('stores')->where('qr_token', $token)->first();
+        // Mendapatkan token baik dari URL parameter maupun query string (?token=...)
+        $token = $token ?? $request->token ?? $request->query('token');
+
+        // 1. Cari toko berdasarkan qr_token_login di tabel stores
+        $store = DB::table('stores')->where('qr_token_login', $token)->first();
 
         if (!$store) {
             abort(404, 'Token QR tidak valid atau toko tidak ditemukan.');
         }
 
-        // 2. Cari user yang terhubung dengan toko tersebut dan memiliki role 'Toko'
-        // (Asumsi: di tabel users Anda memiliki kolom store_id untuk menghubungkan ke toko)
-        $tokoRoleId = DB::table('roles')->where('role_name', 'Toko')->value('id');
+        // 2. Pastikan role 'toko' ada di tabel roles
+        $tokoRole = DB::table('roles')->where('role_name', 'toko')->first();
+        if (!$tokoRole) {
+            $tokoRoleId = DB::table('roles')->insertGetId([
+                'role_name' => 'toko',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $tokoRoleId = $tokoRole->id;
+        }
         
+        // 3. Cari user yang terhubung dengan toko tersebut
         $user = User::where('store_id', $store->id)
                     ->where('role_id', $tokoRoleId)
                     ->first();
 
         if (!$user) {
-            return redirect('/')->withErrors([
-                'email' => 'Akun pengguna untuk toko ini belum terdaftar.',
-            ]);
+            // Buat user otomatis untuk toko ini jika belum ada
+            $user = new User();
+            $user->name = $store->store_name;
+            $user->email = 'toko_' . $store->id . '_' . \Illuminate\Support\Str::random(5) . '@toko.com';
+            $user->password = \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(16));
+            $user->role_id = $tokoRoleId;
+            $user->store_id = $store->id;
+            $user->save();
         }
 
-        // 3. Eksekusi login otomatis ke dalam sistem
+        // 4. Eksekusi login otomatis ke dalam sistem
         Auth::login($user);
 
-        // 4. Perbarui session keamanan
+        // 5. Perbarui session keamanan
         session()->regenerate();
 
-        // 5. Alihkan langsung ke halaman form retur toko
-        return redirect()->intended('/toko/retur');
+        // 6. Alihkan langsung ke halaman dashboard toko
+        return redirect()->intended('/toko');
     }
     public function login(Request $request)
     {
@@ -150,10 +167,13 @@ class AuthController extends Controller
                 return redirect()->intended('/superadmin/register-toko');
             } elseif ($roleName === 'admin') {
                 return redirect()->intended('/admin/dashboard');
+            } elseif ($roleName === 'toko') {
+                return redirect()->intended('/toko/penerimaan');
             }
 
             // Fallback jika role tidak dikenali
-            return redirect('/');
+            Auth::logout();
+            return redirect('/')->withErrors(['email' => 'Role tidak valid atau tidak memiliki akses.']);
         }
 
         // Jika gagal (email/password salah), kembalikan ke halaman login dengan pesan error
