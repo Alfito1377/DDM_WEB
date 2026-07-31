@@ -13,10 +13,17 @@ use App\Http\Controllers\ChatController;
 
 // 1. LOGIN & AUTH
 Route::get('/', function () {
+    if (Auth::check()) {
+        $roleName = strtolower(Auth::user()->role->role_name ?? '');
+        if ($roleName === 'superadmin') return redirect('/superadmin/register-toko');
+        if ($roleName === 'admin') return redirect('/admin/dashboard');
+        if ($roleName === 'toko') return redirect('/toko/penerimaan');
+    }
     return view('auth.login');
 })->name('login');
 Route::get('/login/qr/', [AuthController::class, 'qrLogin'])->name('login.qr');
 Route::get('/login/qr/checkpoint', [AuthController::class, 'qrLoginCheckpoint'])->name('login.qr.checkpoint');
+Route::post('/login/qr/checkpoint', [AuthController::class, 'storeCheckpoint'])->name('login.qr.checkpoint.post');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -56,6 +63,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::get('/', [ReturnController::class, 'indexToko']);
     Route::get('/riwayat', [ReturnController::class, 'indexToko']);
+    
+    // Rute Penerimaan Barang
+    Route::get('/penerimaan', [ReturnController::class, 'penerimaan']);
+    Route::get('/penerimaan/mulai/{logistic_id}', [ReturnController::class, 'mulaiTerima']);
+    Route::post('/penerimaan/scan', [ReturnController::class, 'scanPenerimaan']);
+    
     Route::post('/retur', [ReturnController::class, 'store']);
     Route::get('/retur/{id}/cetak', [ReturnController::class, 'printSuratJalan']);
     Route::delete('/retur/{id}/batal', [ReturnController::class, 'cancel']);
