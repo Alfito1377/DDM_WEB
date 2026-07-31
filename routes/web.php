@@ -44,14 +44,12 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
     Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
     Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // 4. AKSES KHUSUS ADMIN / MANAJER
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('manajer.dashboard');
-    });
-    Route::get('/dashboard', [DashboardController::class, 'indexManager']);
+
 });
 
 // 5. AKSES KHUSUS TOKO

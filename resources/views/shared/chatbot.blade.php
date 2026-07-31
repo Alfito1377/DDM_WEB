@@ -7,7 +7,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
         </div>
         <div>
-            <h2 class="text-sm font-bold text-gray-800">Asisten Pintar Jual Benih App</h2>
+            <h2 class="text-sm font-bold text-gray-800">Asisten Pintar DDM</h2>
             <p class="text-[10px] text-green-600 flex items-center gap-1 font-medium">
                 <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                 RAG Engine Terhubung (Model Optimasi Grid Search)
