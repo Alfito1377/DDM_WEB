@@ -6,6 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <title>PT.Sage Maslahat</title>
 </head>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="bg-gray-50 flex h-screen overflow-hidden">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
