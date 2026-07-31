@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Services\SageApiService;
 use App\Http\Controllers\Api\ForecastingController;
+use App\Http\Controllers\ChatController;
 
 // 1. LOGIN & AUTH
 Route::get('/', function () {
@@ -27,15 +28,13 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // 2. MIDDLEWARE AUTH (Semua yang login bisa akses ini)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
-    Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
-    Route::get('/chatbot', function () { return view('shared.chatbot'); });
-});
+Route::middleware(['auth'])->group(function () {});
 
 // 3. AKSES KHUSUS SUPERADMIN
 Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
-    Route::get('/register-toko', function () { return redirect('/superadmin/daftar-customer'); });
+    Route::get('/register-toko', function () {
+        return redirect('/superadmin/daftar-customer');
+    });
     Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
     Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
     Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
@@ -46,11 +45,19 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
     Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
     Route::get('/retur', [ReturnController::class, 'indexManager']);
     Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
+    Route::get('/chatbot', function () {
+        return view('shared.chatbot');
+    });
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
+    Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
 });
 
 // 4. AKSES KHUSUS ADMIN / MANAJER
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () { return view('manajer.dashboard'); });
+    Route::get('/dashboard', function () {
+        return view('manajer.dashboard');
+    });
     Route::get('/dashboard', [DashboardController::class, 'indexManager']);
 });
 
@@ -78,13 +85,13 @@ Route::get('/api/historical-turnover', [ForecastingController::class, 'getHistor
 
 /// sementara untuk cek toko
 Route::get('/dev-login-toko', function () {
-    $user = \App\Models\User::whereHas('role', function($query) {
+    $user = \App\Models\User::whereHas('role', function ($query) {
         $query->where('role_name', 'toko');
     })->first();
 
     if ($user) {
         Auth::login($user);
-        
+
         return redirect('/toko')->with('success', 'Bypass login berhasil!');
     }
 

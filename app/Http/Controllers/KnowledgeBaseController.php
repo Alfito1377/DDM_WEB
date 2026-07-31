@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\KnowledgeBase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class KnowledgeBaseController extends Controller
 {
@@ -18,13 +19,13 @@ class KnowledgeBaseController extends Controller
         $userRole = strtolower(Auth::user()->role->role_name ?? '');
 
         // Keamanan tambahan: Pastikan hanya admin atau manajer
-        if (!in_array($userRole, ['admin', 'manajer'])) {
+        if (!in_array($userRole, ['superadmin', 'admin', 'manajer'])) {
             abort(403, 'Anda tidak memiliki hak akses ke halaman ini.');
         }
 
         $documents = KnowledgeBase::with('uploader')->orderBy('created_at', 'desc')->get();
-        
-        return view('shared.upload', compact('documents'));
+
+        return view('knowledge_base.upload', compact('documents'));
     }
 
     /**
@@ -32,50 +33,39 @@ class KnowledgeBaseController extends Controller
      */
     public function store(Request $request)
     {
-        $userRole = strtolower(Auth::user()->role->role_name ?? '');
-
-        if (!in_array($userRole, ['admin', 'manajer'])) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-        }
-
-        // 1. Validasi disesuaikan dengan form baru Anda
+        // 1. Hapus 'category' dari validasi
         $request->validate([
-            'category' => 'required|in:regulasi,katalog,panduan',
-            'description' => 'nullable|string',
-            // Mendukung DOCX dan menggunakan nama input 'kb_document'
-            'kb_document' => 'required|file|mimes:pdf,txt,csv,xlsx,xls,docx|max:10240', 
+            'kb_document' => 'required|file|mimes:pdf,txt,csv,xlsx,xls,docx|max:10240',
         ]);
 
         try {
             if ($request->hasFile('kb_document')) {
                 $file = $request->file('kb_document');
                 $filePath = $file->store('knowledge_base', 'public');
-                
-                // Gunakan nama file asli sebagai title karena input title dihapus
-                $originalName = $file->getClientOriginalName();
-                
+                $absolutePath = storage_path('app/public/' . $filePath);
+
+                // 2. Simpan ke database MySQL Laravel (Kategori diisi 'umum' secara otomatis)
                 KnowledgeBase::create([
-                    'title' => $originalName, 
+                    'title' => $file->getClientOriginalName(),
                     'file_path' => $filePath,
                     'file_type' => $file->getClientOriginalExtension(),
-                    'category' => $request->category,
+                    'category' => 'umum', // <--- Ubah menjadi teks statis agar tidak error di database
                     'file_size' => $file->getSize(),
-                    'description' => $request->description,
-                    'uploaded_by' => Auth::user()->id, 
+                    'description' => $request->description ?? '',
+                    'uploaded_by' => Auth::user()->id,
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Dokumen berhasil diindeks ke dalam sistem!'
+                // Kirim lokasi file absolut ke FastAPI (Port 8001)
+                $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8001') . '/webhook/document';
+
+                $response = Http::timeout(10)->post($aiServiceUrl, [
+                    'file_path' => $absolutePath
                 ]);
+
+                return back()->with('success', 'Dokumen berhasil diunggah! AI sedang memprosesnya di latar belakang.');
             }
-            return response()->json(['success' => false, 'message' => 'File tidak ditemukan.'], 400);
-
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengunggah dokumen: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Gagal mengunggah dokumen: ' . $e->getMessage());
         }
     }
     public function panduanToko()
