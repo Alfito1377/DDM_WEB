@@ -62,7 +62,7 @@
                 <thead>
                     <tr class="bg-gray-100 text-gray-700 text-sm">
                         <th class="p-3 border border-gray-300 w-12 text-center">No</th>
-                        <th class="p-3 border border-gray-300">Deskripsi Produk Benih</th>
+                        <th class="p-3 border border-gray-300">Barcode</th>
                         <th class="p-3 border border-gray-300 w-32 text-center">Jumlah (Pack)</th>
                         <th class="p-3 border border-gray-300 w-1/3">Alasan Retur</th>
                     </tr>
@@ -70,7 +70,7 @@
                 <tbody>
                     <tr class="text-gray-800">
                         <td class="p-3 border border-gray-300 text-center font-bold">1</td>
-                        <td class="p-3 border border-gray-300 font-semibold">{{ $retur->product_name }}</td>
+                        <td class="p-3 border border-gray-300 font-semibold text-center">{{ $retur->barcode }}</td>
                         <td class="p-3 border border-gray-300 text-center font-bold text-lg">{{ $retur->quantity }}</td>
                         <td class="p-3 border border-gray-300 text-sm">{{ $retur->reason }}</td>
                     </tr>
