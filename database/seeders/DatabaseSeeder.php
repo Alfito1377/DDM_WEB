@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             StoreSeeder::class,
             UserSeeder::class,
             LogisticSeeder::class,
+            RealisticLogisticSeeder::class,
         ]);
     }
 }

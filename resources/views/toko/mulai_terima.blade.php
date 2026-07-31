@@ -2,6 +2,7 @@
 
 @section('content')
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="space-y-6">
     <!-- Tombol Kembali -->
@@ -67,16 +68,7 @@
                             <button type="submit" class="bg-gray-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-700 transition shadow-sm whitespace-nowrap">Scan</button>
                         </form>
 
-                        <!-- DEBUG LOG -->
-                        <div class="mt-4 p-3 bg-gray-900 rounded-xl border border-gray-700 shadow-inner">
-                            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1 flex justify-between">
-                                <span>Scanner Debug Log</span>
-                                <button type="button" onclick="document.getElementById('debug-log').innerHTML=''" class="text-gray-500 hover:text-white">Clear</button>
-                            </div>
-                            <div id="debug-log" class="text-[11px] font-mono text-green-400 h-24 overflow-y-auto whitespace-pre-wrap flex flex-col gap-1">
-                                <span class="text-gray-500">Menunggu scan...</span>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
 
@@ -189,24 +181,16 @@ document.addEventListener('DOMContentLoaded', function () {
         /* verbose= */ false);
 
     function logDebug(message, type = 'info') {
-        const logBox = document.getElementById('debug-log');
-        if (!logBox) return;
-        
-        // Buang pesan default
-        if (logBox.innerHTML.includes('Menunggu scan...')) {
-            logBox.innerHTML = '';
-        }
-
         const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
-        let colorClass = 'text-green-400';
-        if (type === 'error') colorClass = 'text-red-400';
-        if (type === 'warn') colorClass = 'text-yellow-400';
-
-        const span = document.createElement('div');
-        span.className = colorClass;
-        span.textContent = `[${time}] ${message}`;
-        logBox.appendChild(span);
-        logBox.scrollTop = logBox.scrollHeight;
+        const logMessage = `[${time}] Scanner: ${message}`;
+        
+        if (type === 'error') {
+            console.error(logMessage);
+        } else if (type === 'warn') {
+            console.warn(logMessage);
+        } else {
+            console.log(logMessage);
+        }
     }
 
     function processScan(scannedCode) {
@@ -257,14 +241,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     icon: 'warning',
                     title: 'Sudah Diterima',
                     text: result.body.message
-                }).then(() => { html5QrcodeScanner.resume(); });
+                });
             } else {
                 logDebug(`Server Response: Error - ${result.body.message}`, 'error');
                 Swal.fire({
                     icon: 'error',
                     title: 'Ditolak',
                     text: result.body.message
-                }).then(() => { html5QrcodeScanner.resume(); });
+                });
             }
         })
         .catch(error => {
@@ -274,24 +258,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon: 'error',
                 title: 'Error Jaringan',
                 text: 'Terjadi kesalahan saat menghubungi server.'
-            }).then(() => { html5QrcodeScanner.resume(); });
+            });
         });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
         logDebug(`Scan Success! Captured: ${decodedText}`);
-        html5QrcodeScanner.pause();
         processScan(decodedText);
     }
 
-    // Limit log error to prevent spamming log box too fast
-    let lastErrorTime = 0;
     function onScanFailure(error) {
-        const now = Date.now();
-        if (now - lastErrorTime > 2000) { // log error max once per 2 seconds
-            logDebug(`Scan failed/searching...`, 'warn');
-            lastErrorTime = now;
-        }
+        // html5-qrcode secara terus-menerus memanggil fungsi ini ketika kamera tidak mendeteksi barcode (saat mencari).
+        // Kita tidak perlu menampilkan log ini di console karena akan menjadi spam.
+        // Biarkan kosong agar console tetap bersih.
     }
 
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
