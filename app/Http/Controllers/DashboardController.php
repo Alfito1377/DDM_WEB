@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http; // Pastikan ini di-import
+use Illuminate\Support\Facades\Http; 
 use Illuminate\Support\Facades\Log;
 use App\Models\KnowledgeBase;
 
@@ -50,18 +50,15 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->first();
 
-        // =========================================================================
-        // PROSES DATA HISTORIS (GUDANG LOKAL)
-        // =========================================================================
         $turnovers = DB::table('turnovers')
-            ->selectRaw('DATE_FORMAT(doc_date, "%Y-%m-%d") as ds, SUM(total_kg) as y') // Format diubah sesuai standar Prophet
+            ->selectRaw('DATE_FORMAT(doc_date, "%Y-%m-%d") as ds, SUM(total_kg) as y') 
             ->groupBy('ds')
             ->orderBy('ds', 'asc')
             ->get();
 
         $historicalLabels = [];
         $historicalData = [];
-        $payloadToPython = []; // Array paket data yang akan dikirim ke Python
+        $payloadToPython = []; 
 
         foreach ($turnovers as $to) {
             $historicalLabels[] = date('M Y', strtotime($to->ds)); 
