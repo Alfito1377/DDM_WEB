@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\NewReturnNotification;
+use App\Mail\ReturnApprovalMail;
 use App\Models\AllocationDetail;
 use App\Models\ReturnDetail;
 use App\Models\ReturnOrder;
@@ -32,11 +32,7 @@ class ReturnController extends Controller
      */
    public function create()
     {
-        // Tarik data langsung dari database LOKAL yang sudah disinkronisasi
-        // Ini jauh lebih cepat dan aman dari error validasi
-        $products = DB::table('products')->orderBy('product_name', 'asc')->get();
-
-        return view('toko.retur-form', compact('products'));
+        return view('toko.retur-form');
     }
     /**
      * TAHAP A: Toko Mengajukan Retur (Mendukung Banyak Foto)
@@ -46,7 +42,7 @@ class ReturnController extends Controller
         // 1. Validasi Diubah untuk mendukung Array Gambar
         $request->validate([
             'store_id' => 'required|exists:stores,id',
-            'product_id' => 'required|exists:products,barcode',
+            'barcode' => 'required|string',
             'quantity' => 'required|integer|min:1',
             'reason' => 'required|string',
             'notes' => 'nullable|string',
@@ -55,7 +51,6 @@ class ReturnController extends Controller
         ]);
 
         try {
-            $product = DB::table('products')->where('barcode', $request->product_id)->first();
 
             // 2. LOGIKA UPLOAD BANYAK GAMBAR
             $imagePaths = [];
@@ -82,7 +77,7 @@ class ReturnController extends Controller
 
             DB::table('return_details')->insert([
                 'return_id' => $returnId,
-                'product_id' => $product->id,
+                'barcode' => $request->barcode,
                 'quantity' => $request->quantity,
                 'proof_image_url' => json_encode($imagePaths),
                 'created_at' => now(),
@@ -93,25 +88,21 @@ class ReturnController extends Controller
             try {
                 // Ambil nama toko untuk ditampilkan di email
                 $store = DB::table('stores')->where('id', $request->store_id)->first();
+                $returObj = DB::table('returns')->where('id', $returnId)->first();
+                // Gabungkan details
+                $returObj->barcode = $request->barcode;
+                $returObj->quantity = $request->quantity;
                 
-                // Susun data yang akan dikirim ke tampilan email
-                $mailData = [
-                    'return_code' => $returnCode,
-                    'store_name' => $store->store_name ?? 'Mitra Toko',
-                    'product_name' => $product->product_name,
-                    'quantity' => $request->quantity,
-                    'reason' => $request->reason,
-                    'notes' => $request->notes,
-                ];
+                $storeName = $store->store_name ?? 'Mitra Toko';
 
-                // Cari semua pengguna yang memiliki hak akses (role) sebagai 'manajer'
+                // Cari semua pengguna yang memiliki hak akses (role) sebagai 'superadmin' atau 'admin'
                 $managers = User::whereHas('role', function($q) {
-                    $q->where('role_name', 'manajer');
+                    $q->whereIn('role_name', ['superadmin', 'admin', 'manajer']);
                 })->get();
 
                 // Kirim email ke masing-masing manajer
                 foreach ($managers as $manager) {
-                    Mail::to($manager->email)->send(new NewReturnNotification($mailData));
+                    Mail::to($manager->email)->send(new ReturnApprovalMail($returObj, $storeName));
                 }
             } catch (\Exception $emailError) {
                 // Jika gagal kirim email, diamkan saja agar retur tetap berhasil tersimpan
@@ -164,7 +155,7 @@ class ReturnController extends Controller
                     $allocationDetail = AllocationDetail::whereHas('allocation', function ($q) use ($returnOrder) {
                         $q->where('store_id', $returnOrder->store_id);
                     })
-                    ->where('product_id', $detail->product_id)
+                    ->where('barcode', $detail->barcode)
                     ->first();
 
                     if ($allocationDetail) {
@@ -187,19 +178,96 @@ class ReturnController extends Controller
     }
 
     /**
+     * TAHAP B (Email): Manajer Memproses Retur via Tautan Email (1-Click Approval)
+     */
+    public function emailApprove(Request $request, $id)
+    {
+        $status = $request->query('status'); // 'Approved' atau 'Rejected'
+        
+        if (!in_array($status, ['Approved', 'Rejected'])) {
+            return view('toko.email-approval-result', [
+                'status' => 'error',
+                'message' => 'Status persetujuan tidak valid.'
+            ]);
+        }
+
+        $returnOrder = ReturnOrder::with('details')->find($id);
+
+        if (!$returnOrder) {
+            return view('toko.email-approval-result', [
+                'status' => 'error',
+                'message' => 'Data retur tidak ditemukan.'
+            ]);
+        }
+
+        if ($returnOrder->status !== 'Pending') {
+            return view('toko.email-approval-result', [
+                'status' => 'error',
+                'retur' => $returnOrder,
+                'message' => 'Retur ini sudah diproses sebelumnya (Status saat ini: ' . $returnOrder->status . ').'
+            ]);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Update status di tabel returns
+            // Karena ini via email, kita bisa menganggap user manager pertama/superadmin sebagai yang memproses, atau null (sistem)
+            // Namun karena tabel returns mungkin mewajibkan manager_id, mari kita cari user superadmin pertama
+            $manager = User::whereHas('role', function($q) {
+                $q->where('role_name', 'superadmin');
+            })->first();
+
+            $returnOrder->update([
+                'status' => $status,
+                'manager_id' => $manager ? $manager->id : null,
+            ]);
+
+            // 2. Jika disetujui (Approved), kalkulasi ulang stok di tabel alokasi
+            if ($status === 'Approved') {
+                foreach ($returnOrder->details as $detail) {
+                    $allocationDetail = AllocationDetail::whereHas('allocation', function ($q) use ($returnOrder) {
+                        $q->where('store_id', $returnOrder->store_id);
+                    })
+                    ->where('barcode', $detail->barcode)
+                    ->first();
+
+                    if ($allocationDetail) {
+                        $allocationDetail->increment('quantity_returned', $detail->quantity);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return view('toko.email-approval-result', [
+                'status' => 'success',
+                'retur' => $returnOrder,
+                'message' => 'Keputusan Anda ('.($status == 'Approved' ? 'Setuju' : 'Tolak').') telah berhasil disimpan.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return view('toko.email-approval-result', [
+                'status' => 'error',
+                'retur' => $returnOrder,
+                'message' => 'Terjadi kesalahan sistem saat menyimpan keputusan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Menampilkan daftar retur untuk Manajer
      */
     public function indexManager()
     {
-        // Menggabungkan data retur dengan toko, detail retur, dan nama produk
         $returns = DB::table('returns')
             ->join('stores', 'returns.store_id', '=', 'stores.id')
             ->join('return_details', 'returns.id', '=', 'return_details.return_id')
-            ->join('products', 'return_details.product_id', '=', 'products.id')
             ->select(
                 'returns.*',
                 'stores.store_name',
-                'products.product_name',
+                'return_details.barcode',
                 'return_details.quantity'
             )
             ->orderBy('returns.created_at', 'desc')
@@ -215,13 +283,10 @@ class ReturnController extends Controller
     {
         $storeId = Auth::user()->store_id;
 
-        $products = DB::table('products')->orderBy('product_name', 'asc')->get();
-
         // Ambil data retur milik toko ini
         $returns = DB::table('returns')
             ->join('return_details', 'returns.id', '=', 'return_details.return_id')
-            ->join('products', 'return_details.product_id', '=', 'products.id')
-            ->select('returns.*', 'products.product_name', 'return_details.quantity')
+            ->select('returns.*', 'return_details.barcode', 'return_details.quantity')
             ->where('returns.store_id', $storeId)
             ->orderBy('returns.created_at', 'desc')
             ->get();
@@ -233,7 +298,7 @@ class ReturnController extends Controller
             'approved' => DB::table('returns')->where('store_id', $storeId)->where('status', 'Approved')->count(),
         ];
 
-        return view('toko.riwayat', compact('returns', 'stats', 'products'));
+        return view('toko.riwayat', compact('returns', 'stats'));
     }
 
     /**
@@ -247,11 +312,10 @@ class ReturnController extends Controller
         $retur = DB::table('returns')
             ->join('stores', 'returns.store_id', '=', 'stores.id')
             ->join('return_details', 'returns.id', '=', 'return_details.return_id')
-            ->join('products', 'return_details.product_id', '=', 'products.id')
             ->select(
                 'returns.*',
                 'stores.store_name',
-                'products.product_name',
+                'return_details.barcode',
                 'return_details.quantity'
             )
             ->where('returns.id', $id)
@@ -431,15 +495,7 @@ class ReturnController extends Controller
             ], 404);
         }
 
-        // Cari produk master berdasarkan barcode
-        $product = DB::table('products')->where('barcode', $barcode)->orWhere('product_code', $barcode)->first();
-        if (!$product) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Produk tidak terdaftar di database master.'
-            ], 404);
-        }
-
+        // Langsung lanjutkan tanpa mengecek produk
         try {
             DB::beginTransaction();
 
@@ -454,7 +510,7 @@ class ReturnController extends Controller
             // 2. Cek apakah toko sudah memiliki record stok untuk produk ini
             $storeStock = DB::table('store_stocks')
                 ->where('store_id', $storeId)
-                ->where('product_id', $product->id)
+                ->where('barcode', $barcode)
                 ->lockForUpdate() // Mencegah race condition
                 ->first();
 
@@ -463,7 +519,7 @@ class ReturnController extends Controller
             } else {
                 DB::table('store_stocks')->insert([
                     'store_id' => $storeId,
-                    'product_id' => $product->id,
+                    'barcode' => $barcode,
                     'quantity' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -473,7 +529,7 @@ class ReturnController extends Controller
             // 3. Catat ke log stok
             DB::table('store_stock_logs')->insert([
                 'store_id' => $storeId,
-                'product_id' => $product->id,
+                'barcode' => $barcode,
                 'type' => 'in',
                 'quantity' => 1,
                 'created_at' => now(),
@@ -504,10 +560,9 @@ class ReturnController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Berhasil! 1x ' . $product->product_name . ' diterima.',
+            'message' => 'Berhasil! 1x Barcode ' . $barcode . ' diterima.',
             'data' => [
-                'barcode' => $product->barcode ?? $product->product_code,
-                'product_name' => $product->product_name,
+                'barcode' => $barcode,
                 'scanned_at' => now()->format('H:i')
             ]
         ]);

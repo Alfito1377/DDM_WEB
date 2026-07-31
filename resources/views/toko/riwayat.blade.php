@@ -55,7 +55,7 @@
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
                     <tr>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Kode / Tanggal</th>
-                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Produk Benih</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Barcode</th>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Alasan</th>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Catatan Toko</th>
                         <th scope="col" class="px-6 py-4 font-bold text-center tracking-wider">Status</th>
@@ -70,7 +70,7 @@
                                 <div class="text-[11px] text-gray-500 font-medium mt-0.5">{{ \Carbon\Carbon::parse($retur->created_at)->format('d M Y, H:i') }} WIB</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="font-semibold text-gray-800">{{ $retur->product_name }}</div>
+                                <div class="font-semibold text-gray-800">{{ $retur->barcode }}</div>
                                 <div class="text-xs text-green-600 font-bold mt-0.5">{{ $retur->quantity }} Pack</div>
                             </td>
                             <td class="px-6 py-4 text-gray-600">{{ $retur->reason }}</td>
@@ -138,7 +138,7 @@
                         <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                         </div>
-                        <input type="text" id="product_id" name="product_id" required class="w-full border border-gray-300 py-3 pl-12 pr-24 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition text-sm font-medium" placeholder="Ketikan ID atau Scan Barcode...">
+                        <input type="text" id="barcode" name="barcode" required class="w-full border border-gray-300 py-3 pl-12 pr-24 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition text-sm font-medium" placeholder="Ketikan ID atau Scan Barcode...">
                         
                         <div class="absolute inset-y-0 right-1.5 flex items-center">
                             <button type="button" onclick="openBarcodeScanner()" class="bg-green-100 text-green-700 hover:bg-green-200 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-green-200">
@@ -241,7 +241,7 @@
 
         barcodeScanner.start({ facingMode: "environment" }, config, 
             (decodedText, decodedResult) => {
-                const inputField = document.getElementById('product_id');
+                const inputField = document.getElementById('barcode');
                 inputField.value = decodedText;
                 
                 inputField.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
@@ -277,7 +277,7 @@
         
         let formData = new FormData();
         formData.append('store_id', document.getElementById('store_id').value);
-        formData.append('product_id', document.getElementById('product_id').value);
+        formData.append('barcode', document.getElementById('barcode').value);
         formData.append('quantity', document.getElementById('quantity').value);
         formData.append('reason', document.getElementById('reason').value);
 

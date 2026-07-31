@@ -26,7 +26,7 @@
                 <thead class="text-xs text-slate-700 uppercase bg-slate-50/80 border-b border-slate-200/60 whitespace-nowrap">
                     <tr>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Kode & Tanggal</th>
-                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Nama Toko & Produk</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Nama Toko & Barcode</th>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Alasan Retur</th>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider">Keterangan Tambahan</th>
                         <th scope="col" class="px-6 py-4 font-bold tracking-wider text-center">Status</th>
@@ -52,7 +52,7 @@
                                     {{ $retur->store_name }}
                                 </div>
                                 <div class="text-[11px] text-slate-600 font-medium mt-1.5 bg-slate-100/80 border border-slate-200/60 inline-block px-2 py-0.5 rounded-md">
-                                    {{ $retur->product_name }} &bull; <span class="font-bold text-slate-800">{{ $retur->quantity }} Pack</span>
+                                    Barcode: {{ $retur->barcode }} &bull; <span class="font-bold text-slate-800">{{ $retur->quantity }} Pack</span>
                                 </div>
                             </td>
                             
@@ -151,8 +151,8 @@
                     <p id="modalStoreName" class="text-sm font-bold text-slate-800">Toko</p>
                 </div>
                 <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg> Produk & Jumlah</p>
-                    <p id="modalProduct" class="text-sm font-bold text-slate-800">Produk</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg> Barcode & Jumlah</p>
+                    <p id="modalProduct" class="text-sm font-bold text-slate-800">Barcode</p>
                 </div>
                 <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 col-span-2">
                     <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Alasan Retur</p>
@@ -182,7 +182,7 @@
         // Isi teks informasi
         document.getElementById('modalReturnCode').innerText = returData.return_code || ('#RET-' + returData.id);
         document.getElementById('modalStoreName').innerText = returData.store_name;
-        document.getElementById('modalProduct').innerText = `${returData.product_name} (${returData.quantity} Pack)`;
+        document.getElementById('modalProduct').innerText = `${returData.barcode} (${returData.quantity} Pack)`;
         document.getElementById('modalReason').innerText = returData.reason;
 
         // Bersihkan galeri gambar sebelumnya
@@ -252,7 +252,7 @@
         formData.append('status', decisionStatus);
 
         try {
-            const response = await fetch(`/manajer/retur/${returnId}/approve`, {
+            const response = await fetch(`/superadmin/retur/${returnId}/approve`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',

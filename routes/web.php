@@ -30,6 +30,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // 2. MIDDLEWARE AUTH (Semua yang login bisa akses ini)
 Route::middleware(['auth'])->group(function () {});
 
+// 2.5 1-Click Email Approval (Signed URL, no auth required)
+Route::get('/retur/email-approve/{id}', [ReturnController::class, 'emailApprove'])
+    ->name('retur.email.approve')
+    ->middleware('signed');
+
 // 3. AKSES KHUSUS SUPERADMIN
 Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
     Route::get('/register-toko', function () {
