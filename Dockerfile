@@ -1,15 +1,3 @@
-FROM node:22-alpine AS frontend
-
-WORKDIR /app
-
-COPY package.json package-lock.json* .npmrc ./
-RUN npm ci --ignore-scripts
-
-COPY vite.config.js ./
-COPY resources ./resources
-RUN npm run build
-
-
 FROM composer:2 AS vendor
 
 WORKDIR /app
@@ -59,7 +47,6 @@ WORKDIR /var/www/html
 
 COPY --from=vendor /app/vendor ./vendor
 COPY . .
-COPY --from=frontend /app/public/build ./public/build
 
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
