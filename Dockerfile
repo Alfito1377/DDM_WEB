@@ -12,25 +12,33 @@ RUN composer dump-autoload --optimize --classmap-authoritative
 FROM php:8.3-fpm-alpine
 
 RUN apk add --no-cache \
-      libpng \
-      libzip \
-      zlib \
-      oniguruma \
-      freetype \
-      libjpeg-turbo \
-      ca-certificates \
-      curl \
-  && docker-php-ext-configure gd --with-freetype --with-jpeg \
-  && docker-php-ext-install -j$(nproc) \
-      pdo_mysql \
-      gd \
-      zip \
-      bcmath \
-      pcntl \
-      redis \
-      opcache \
-      sockets \
-  && rm -rf /var/cache/apk/* /tmp/*
+        icu-libs \
+        libzip \
+        libpng \
+        libjpeg-turbo \
+        freetype \
+        oniguruma \
+    && apk add --no-cache --virtual .build-deps \
+        icu-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        oniguruma-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mbstring \
+        intl \
+        zip \
+        gd \
+        opcache \
+        pcntl \
+        bcmath \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
 
 COPY docker/php.ini /usr/local/etc/php/conf.d/99-app.ini
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-app.conf
