@@ -35,8 +35,7 @@ RUN apk add --no-cache \
         opcache \
         pcntl \
         bcmath \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
+        redis \
     && apk del .build-deps \
     && rm -rf /tmp/pear
 
