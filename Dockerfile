@@ -18,6 +18,7 @@ RUN apk add --no-cache \
         libjpeg-turbo \
         freetype \
         oniguruma \
+        $PHPIZE_DEPS \
     && apk add --no-cache --virtual .build-deps \
         icu-dev \
         libzip-dev \
@@ -35,7 +36,8 @@ RUN apk add --no-cache \
         opcache \
         pcntl \
         bcmath \
-        redis \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && apk del .build-deps \
     && rm -rf /tmp/pear
 
