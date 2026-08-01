@@ -20,7 +20,8 @@ RUN apk add --no-cache \
       libjpeg-turbo \
       ca-certificates \
       curl \
-  && install-php-extensions \
+  && docker-php-ext-configure gd --with-freetype --with-jpeg \
+  && docker-php-ext-install -j$(nproc) \
       pdo_mysql \
       gd \
       zip \
