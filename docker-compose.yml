@@ -83,3 +83,7 @@ volumes:
     app-public:
     app-storage:
     app-logs:
+
+networks:
+    ddm:
+        driver: bridge
