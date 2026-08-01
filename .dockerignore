@@ -31,7 +31,6 @@ storage/framework/views/*
 docker-compose.yml
 Dockerfile
 .dockerignore
-docker/
 
 README.md
 _ide_helper.php
