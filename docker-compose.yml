@@ -61,21 +61,6 @@ services:
         depends_on:
             - migrate
 
-    scheduler:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: ddm-web-scheduler
-        restart: unless-stopped
-        env_file:
-            - .env
-        user: www-data
-        command: php artisan schedule:work
-        networks:
-            - ddm
-        depends_on:
-            - migrate
-
 volumes:
     app-storage:
     app-logs:
