@@ -7,7 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 class ReturnOrder extends Model
 {
     protected $table = 'returns'; 
-    protected $guarded = [];
+    protected $fillable = [
+        'return_code',
+        'store_id',
+        'manager_id',
+        'status',
+        'reason',
+        'notes',
+        'proof_image',
+    ];
 
     public function details()
     {

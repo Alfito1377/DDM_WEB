@@ -14,8 +14,7 @@ class DatabaseSeeder extends Seeder
             JenisMitraSeeder::class,
             StoreSeeder::class,
             UserSeeder::class,
-            LogisticSeeder::class,
-            RealisticLogisticSeeder::class,
+            MassDataSeeder::class,
         ]);
     }
 }

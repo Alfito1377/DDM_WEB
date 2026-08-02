@@ -14,9 +14,9 @@ class SageApiService
 
     public function __construct()
     {
-        $this->baseUrl = env('SAGE_API_URL', 'https://app.sage.biz.id/api');
-        $this->email = env('SAGE_API_EMAIL'); 
-        $this->password = env('SAGE_API_PASSWORD');
+        $this->baseUrl = config('services.sage.url', 'https://app.sage.biz.id/api');
+        $this->email = config('services.sage.email');
+        $this->password = config('services.sage.password');
     }
 
     /**

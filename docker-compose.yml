@@ -13,7 +13,13 @@ services:
         networks:
             - ddm
         depends_on:
-            - migrate
+            migrate:
+                condition: service_completed_successfully
+        healthcheck:
+            test: ["CMD-SHELL", "php-fpm-healthcheck || kill -0 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
 
     web:
         image: nginx:alpine
@@ -59,7 +65,8 @@ services:
         networks:
             - ddm
         depends_on:
-            - migrate
+            migrate:
+                condition: service_completed_successfully
 
 volumes:
     app-storage:

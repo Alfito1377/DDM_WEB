@@ -277,7 +277,7 @@ class AdminController extends Controller
             ], 404);
         }
 
-        $store->update($request->all());
+        $store->update($request->only(['store_name', 'owner_name', 'phone_number', 'address', 'jenis_mitra_id']));
 
         return response()->json([
             'success' => true,

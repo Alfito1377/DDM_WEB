@@ -22,7 +22,7 @@ Route::get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     
     // Fitur Retur
     Route::prefix('returns')->group(function () {
