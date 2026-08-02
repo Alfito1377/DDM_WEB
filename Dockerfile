@@ -54,7 +54,8 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 
 RUN php artisan config:clear \
     && php artisan route:clear \
-    && php artisan view:clear
+    && php artisan view:clear \
+    && php artisan event:clear
 
 EXPOSE 9000
 

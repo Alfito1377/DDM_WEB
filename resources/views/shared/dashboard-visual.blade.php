@@ -140,7 +140,7 @@
                 </div>
             </div>
             <div class="mt-6 pt-4 border-t border-gray-100 text-center">
-                <a href="#" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Lihat Semua Kendaraan &rarr;</a>
+                <a href="{{ Auth::user()->role->role_name === 'superadmin' ? url('/superadmin/pengiriman') : '#' }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Lihat Semua Kendaraan &rarr;</a>
             </div>
         </div>
     </div>

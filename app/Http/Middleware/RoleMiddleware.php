@@ -17,11 +17,11 @@ class RoleMiddleware
         }
 
         // Ambil data role_name dari relasi user (pastikan relasi 'role' ada di model User)
-        $userRole = Auth::user()->role->role_name ?? '';
-
-        // Jika role sesuai dengan salah satu argumen, izinkan lewat
+        $userRole = strtolower(Auth::user()->role->role_name ?? '');
         $roles = array_map('strtolower', $roles);
-        if (in_array(strtolower($userRole), $roles)) {
+
+        // Jika role sesuai, izinkan lewat. Jika tidak, kembalikan ke halaman sebelumnya.
+        if (in_array($userRole, $roles)) {
             return $next($request);
         }
 

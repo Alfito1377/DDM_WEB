@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'sage' => [
+        'url' => env('SAGE_API_URL', 'https://app.sage.biz.id/api'),
+        'email' => env('SAGE_API_EMAIL'),
+        'password' => env('SAGE_API_PASSWORD'),
+    ],
+
+    'whs' => [
+        'url' => env('WHS_API_URL'),
+        'token' => env('WHS_API_TOKEN'),
+    ],
+
 ];

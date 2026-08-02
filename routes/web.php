@@ -39,48 +39,83 @@ Route::post('/retur/email-approve/{id}', [ReturnController::class, 'emailApprove
     ->name('retur.email.approve.process')
     ->middleware('signed');
 
-// 3. AKSES KHUSUS SUPERADMIN
-Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
-    Route::get('/register-toko', function () {
+// 3. AKSES KHUSUS SUPERADMIN & ADMIN
+Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
+    Route::get('/superadmin', function () {
+        return redirect('/superadmin/dashboard-logistik');
+    });
+    Route::get('/admin', function () {
+        return redirect('/admin/dashboard-logistik');
+    });
+    Route::get('/superadmin/register-toko', function () {
         return redirect('/superadmin/daftar-customer');
     });
-    Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
-    Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
-    Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
-    Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
-    Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
-    Route::get('/pengiriman', [AdminController::class, 'daftarPengiriman']);
-    Route::get('/pengiriman/{id}/detail', [AdminController::class, 'detailPengiriman']);
-    Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
-    Route::get('/retur', [ReturnController::class, 'indexManager']);
-    Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
-    Route::get('/chatbot', function () {
-        return view('shared.chatbot');
-    });
-    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
-    Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
-    Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
 
-// 4. AKSES KHUSUS ADMIN / MANAJER
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('manajer.dashboard');
+    // RUTE PREFIX SUPERADMIN
+    Route::prefix('superadmin')->group(function () {
+        Route::get('/dashboard-logistik', [DashboardController::class, 'index']);
+        Route::get('/dashboard-analitik', [DashboardController::class, 'indexManager']);
+        Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
+        Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
+        Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
+        Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
+        Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
+        Route::get('/pengiriman', [AdminController::class, 'daftarPengiriman']);
+        Route::get('/pengiriman/{id}/detail', [AdminController::class, 'detailPengiriman']);
+        Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
+        Route::get('/retur', [ReturnController::class, 'indexManager']);
+        Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
+        Route::get('/chatbot', function () {
+            return view('shared.chatbot');
+        });
+        Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('superadmin.chat.send');
+        Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
+        Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
+
+        // Graceful fallback for old dashboard routes
+        Route::get('/dashboard', function () {
+            return redirect('/superadmin/dashboard-logistik');
+        })->name('superadmin.dashboard');
     });
-    Route::get('/dashboard', [DashboardController::class, 'indexManager']);
+
+    // RUTE PREFIX ADMIN
+    Route::prefix('admin')->group(function () {
+        Route::get('/dashboard-logistik', [DashboardController::class, 'index']);
+        Route::get('/dashboard-analitik', [DashboardController::class, 'indexManager']);
+        Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
+        Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
+        Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
+        Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
+        Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
+        Route::get('/pengiriman', [AdminController::class, 'daftarPengiriman']);
+        Route::get('/pengiriman/{id}/detail', [AdminController::class, 'detailPengiriman']);
+        Route::post('/pengiriman', [AdminController::class, 'storePengiriman']);
+        Route::get('/retur', [ReturnController::class, 'indexManager']);
+        Route::post('/retur/{id}/approve', [ReturnController::class, 'approve']);
+        Route::get('/chatbot', function () {
+            return view('shared.chatbot');
+        });
+        Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('admin.chat.send');
+        Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
+        Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
+
+        // Graceful fallback for old dashboard routes
+        Route::get('/dashboard', function () {
+            return redirect('/admin/dashboard-analitik');
+        })->name('admin.dashboard');
+    });
 });
 
 // 5. AKSES KHUSUS TOKO
 Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::get('/', [ReturnController::class, 'indexToko']);
     Route::get('/riwayat', [ReturnController::class, 'indexToko']);
-    
+
     // Rute Penerimaan Barang
     Route::get('/penerimaan', [ReturnController::class, 'penerimaan']);
     Route::get('/penerimaan/mulai/{logistic_id}', [ReturnController::class, 'mulaiTerima']);
     Route::post('/penerimaan/scan', [ReturnController::class, 'scanPenerimaan']);
-    
+
     Route::post('/retur', [ReturnController::class, 'store']);
     Route::get('/retur/{id}/cetak', [ReturnController::class, 'printSuratJalan']);
     Route::delete('/retur/{id}/batal', [ReturnController::class, 'cancel']);
@@ -93,7 +128,3 @@ Route::middleware(['auth', 'role:pekerja_lapang'])->prefix('lapangan')->group(fu
     Route::get('/retur', [ReturnController::class, 'createLapangan']);
     Route::post('/retur', [ReturnController::class, 'store']);
 });
-
-
-
-
