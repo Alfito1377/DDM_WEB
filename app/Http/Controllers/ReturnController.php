@@ -54,7 +54,7 @@ class ReturnController extends Controller
             'quantity' => 'required|integer|min:1',
             'reason' => 'required|string',
             'notes' => 'nullable|string',
-            'proof_images' => 'required|array|min:1',
+            'proof_images' => 'nullable|array|min:1',
             'proof_images.*' => 'image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
