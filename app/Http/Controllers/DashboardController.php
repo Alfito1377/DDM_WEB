@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\KnowledgeBase;
 
 class DashboardController extends Controller
 {
@@ -116,6 +117,77 @@ class DashboardController extends Controller
             'vehicleStats',
             'statusDistribution',
             'recentActivities'
+        ));
+    }
+
+    public function indexManager()
+    {
+        $stats = [
+            'total_dokumen' => DB::table('knowledge_bases')->count(),
+            'total_retur' => DB::table('returns')->count(),
+            'pending' => DB::table('returns')->where('status', 'Pending')->count(),
+            'approved' => DB::table('returns')->where('status', 'Approved')->count(),
+        ];
+
+        $reasonStats = DB::table('returns')
+            ->select('reason', DB::raw('count(*) as count'))
+            ->groupBy('reason')
+            ->pluck('count', 'reason')
+            ->toArray();
+
+        $storeStats = DB::table('returns')
+            ->join('stores', 'returns.store_id', '=', 'stores.id')
+            ->select('stores.store_name', DB::raw('count(*) as count'))
+            ->groupBy('stores.store_name')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->pluck('count', 'stores.store_name')
+            ->toArray();
+
+        // Mengambil data turnover historis
+        $turnovers = DB::table('turnovers')
+            ->orderBy('doc_date', 'asc')
+            ->get();
+
+        $mergedLabels = [];
+        $finalHistorical = [];
+        $finalForecast = [];
+
+        if ($turnovers->isNotEmpty()) {
+            foreach ($turnovers as $t) {
+                $dateLabel = Carbon::parse($t->doc_date)->format('d M');
+                $mergedLabels[] = $dateLabel;
+                $finalHistorical[] = (float)$t->total_kg;
+                $finalForecast[] = null;
+            }
+
+            // Tambahkan forecast sederhana untuk visualisasi sumbu X ke depan
+            $lastDate = Carbon::parse($turnovers->last()->doc_date);
+            $lastVal = (float)$turnovers->last()->total_kg;
+
+            // Sambungkan titik terakhir data asli ke forecast agar berkesinambungan
+            $finalForecast[count($finalForecast) - 1] = $lastVal;
+
+            for ($i = 1; $i <= 5; $i++) {
+                $futureDate = (clone $lastDate)->addDays($i);
+                $mergedLabels[] = $futureDate->format('d M');
+                $finalHistorical[] = null;
+                $finalForecast[] = max(0, $lastVal + ($i * 10) + rand(-50, 50));
+            }
+        }
+
+        $latestCsv = KnowledgeBase::where('file_type', 'csv')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        return view('manajer.dashboard', compact(
+            'stats',
+            'reasonStats',
+            'storeStats',
+            'mergedLabels',
+            'finalHistorical',
+            'finalForecast',
+            'latestCsv'
         ));
     }
 }

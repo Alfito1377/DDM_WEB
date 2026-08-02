@@ -113,9 +113,18 @@
                 </div>
                 <p class="text-green-800 font-bold text-lg mb-1">Toko Berhasil Didaftarkan!</p>
                 <p class="text-sm text-gray-600 mb-6">Berikut adalah QR Code akses untuk toko ini.</p>
-                <div class="flex justify-center mb-6">
-                    <div class="w-48 h-48 bg-white p-2 border-2 border-dashed border-green-300 rounded-lg flex items-center justify-center">
-                        <img id="newQrImage" src="" alt="QR Code Baru" class="w-full h-full object-contain">
+                <div class="flex justify-center gap-6 mb-6">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs font-bold text-gray-500 mb-1">QR Login</span>
+                        <div class="w-36 h-36 bg-white p-2 border-2 border-dashed border-green-300 rounded-lg flex items-center justify-center">
+                            <img id="newQrImageLogin" src="" alt="QR Code Login" class="w-full h-full object-contain">
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs font-bold text-gray-500 mb-1">QR Checkpoint</span>
+                        <div class="w-36 h-36 bg-white p-2 border-2 border-dashed border-green-300 rounded-lg flex items-center justify-center">
+                            <img id="newQrImageCheckpoint" src="" alt="QR Code Checkpoint" class="w-full h-full object-contain">
+                        </div>
                     </div>
                 </div>
                 <button onclick="reloadPage()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl transition">
@@ -237,7 +246,8 @@
             const result = await response.json();
             if (result.success) {
                 document.getElementById('formRegisterCustomer').classList.add('hidden');
-                document.getElementById('newQrImage').src = result.qr_image;
+                document.getElementById('newQrImageLogin').src = result.qr_image_login;
+                document.getElementById('newQrImageCheckpoint').src = result.qr_checkpoint_image;
                 document.getElementById('registerSuccessArea').classList.remove('hidden');
                 e.target.reset();
             } else {

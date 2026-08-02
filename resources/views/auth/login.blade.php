@@ -122,7 +122,7 @@
                         <div>
                             <div class="flex justify-between items-center mb-1.5">
                                 <label class="block text-sm font-semibold text-gray-700">Kata Sandi</label>
-                                <a href="#" class="text-xs font-semibold text-green-600 hover:underline">Lupa sandi?</a>
+                                <a href="javascript:void(0)" onclick="alert('Silakan hubungi administrator IT PT Sage Mashlahat untuk mereset kata sandi Anda.')" class="text-xs font-semibold text-green-600 hover:underline">Lupa sandi?</a>
                             </div>
                             <input type="password" name="password" required class="w-full border border-gray-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="••••••••">
                         </div>

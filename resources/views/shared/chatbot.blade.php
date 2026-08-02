@@ -76,7 +76,7 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         // 4. Kirim request ke ChatController
-        const response = await fetch('/superadmin/chat/send', {
+        const response = await fetch('{{ url(Request::route()->getPrefix() . "/chat/send") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

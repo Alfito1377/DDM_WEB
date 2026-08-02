@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         // Pastikan user sudah login
         if (!Auth::check()) {
@@ -17,10 +17,11 @@ class RoleMiddleware
         }
 
         // Ambil data role_name dari relasi user (pastikan relasi 'role' ada di model User)
-        $userRole = Auth::user()->role->role_name ?? '';
+        $userRole = strtolower(Auth::user()->role->role_name ?? '');
+        $roles = array_map('strtolower', $roles);
 
         // Jika role sesuai, izinkan lewat. Jika tidak, kembalikan ke halaman sebelumnya.
-        if (strtolower($userRole) === strtolower($role)) {
+        if (in_array($userRole, $roles)) {
             return $next($request);
         }
 

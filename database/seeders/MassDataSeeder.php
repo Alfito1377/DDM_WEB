@@ -33,6 +33,10 @@ class MassDataSeeder extends Seeder
         DB::table('logistic')->truncate();
         DB::table('driver')->truncate();
         DB::table('vehicle')->truncate();
+        DB::table('turnovers')->truncate();
+        DB::table('turnover_details')->truncate();
+        DB::table('delivery_receipts')->truncate();
+        DB::table('delivery_receipt_details')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $this->seedDrivers();
@@ -43,6 +47,7 @@ class MassDataSeeder extends Seeder
         $this->seedLogistics();    // ~600 shipments
         $this->seedReturns();      // ~200 returns
         $this->seedStoreStocks();  // stock records per store
+        $this->seedTurnoversAndDeliveries(); // ~200 records
 
         $this->command->info('Mass data seeding complete!');
     }
@@ -418,5 +423,112 @@ class MassDataSeeder extends Seeder
         }
 
         return array_key_first($weights);
+    }
+
+    // ───────────────────────────────────────────────
+    // TURNOVERS AND DELIVERIES (~200 records over 60 days)
+    // ───────────────────────────────────────────────
+    private function seedTurnoversAndDeliveries(): void
+    {
+        $warehouses = ['Gudang Utama', 'Gudang Cabang', 'Gudang Distribusi'];
+        $locations = ['Rak A-1', 'Rak B-2', 'Rak C-3', 'Rak D-4'];
+
+        $turnoverBatch = [];
+        $turnoverDetailBatch = [];
+        $deliveryBatch = [];
+        $deliveryDetailBatch = [];
+
+        // Seed over 60 days
+        for ($i = 0; $i < 60; $i++) {
+            $date = Carbon::now()->subDays(60 - $i);
+            
+            // Turnovers: 1-3 transactions per day
+            $tCount = rand(1, 3);
+            for ($j = 0; $j < $tCount; $j++) {
+                $docNo = 'TO-' . $date->format('Ymd') . '-' . str_pad((string)$j, 3, '0', STR_PAD_LEFT);
+                $totalKg = rand(100, 1500);
+
+                $turnoverBatch[] = [
+                    'doc_no' => $docNo,
+                    'doc_date' => $date->toDateString(),
+                    'location' => $locations[array_rand($locations)],
+                    'warehouse' => $warehouses[array_rand($warehouses)],
+                    'total_kg' => $totalKg,
+                    'remark' => 'Produksi/Penerimaan Harian',
+                    'posted_at' => $date->toDateString(),
+                    'created_at' => $date,
+                    'updated_at' => $date,
+                ];
+
+                // Details
+                $detailCount = rand(1, 3);
+                for ($d = 0; $d < $detailCount; $d++) {
+                    $turnoverDetailBatch[] = [
+                        'doc_no' => $docNo,
+                        'batch_no' => 'BAT-' . strtoupper(Str::random(5)),
+                        'variety_code' => $this->barcodes[array_rand($this->barcodes)],
+                        'variety_name' => 'Benih Unggul ' . Str::random(3),
+                        'product_name' => 'Produk Benih ' . Str::random(3),
+                        'unit_code' => 'KG',
+                        'qty' => $totalKg / $detailCount,
+                        'total_kg' => $totalKg / $detailCount,
+                        'created_at' => $date,
+                        'updated_at' => $date,
+                    ];
+                }
+            }
+
+            // Deliveries: 1-2 transactions per day
+            $dCount = rand(1, 2);
+            for ($j = 0; $j < $dCount; $j++) {
+                $docNo = 'DR-' . $date->format('Ymd') . '-' . str_pad((string)$j, 3, '0', STR_PAD_LEFT);
+                $totalKg = rand(50, 1000);
+
+                $deliveryBatch[] = [
+                    'doc_no' => $docNo,
+                    'doc_date' => $date->toDateString(),
+                    'customer_name' => 'Mitra Toko ' . Str::random(3),
+                    'order_no' => 'ORD-' . strtoupper(Str::random(5)),
+                    'remark' => 'Pengiriman barang ke mitra',
+                    'posted_at' => $date->toDateString(),
+                    'created_at' => $date,
+                    'updated_at' => $date,
+                ];
+
+                // Details
+                $detailCount = rand(1, 2);
+                for ($d = 0; $d < $detailCount; $d++) {
+                    $deliveryDetailBatch[] = [
+                        'doc_no' => $docNo,
+                        'product_name' => 'Produk Benih ' . Str::random(3),
+                        'location' => $locations[array_rand($locations)],
+                        'warehouse' => $warehouses[array_rand($warehouses)],
+                        'lot_no' => 'LOT-' . strtoupper(Str::random(5)),
+                        'lot_expired' => $date->copy()->addYear()->toDateString(),
+                        'unit_code' => 'KG',
+                        'qty' => $totalKg / $detailCount,
+                        'total_kg' => $totalKg / $detailCount,
+                        'created_at' => $date,
+                        'updated_at' => $date,
+                    ];
+                }
+            }
+        }
+
+        // Insert in chunks
+        foreach (array_chunk($turnoverBatch, 50) as $chunk) {
+            DB::table('turnovers')->insert($chunk);
+        }
+        foreach (array_chunk($turnoverDetailBatch, 100) as $chunk) {
+            DB::table('turnover_details')->insert($chunk);
+        }
+        foreach (array_chunk($deliveryBatch, 50) as $chunk) {
+            DB::table('delivery_receipts')->insert($chunk);
+        }
+        foreach (array_chunk($deliveryDetailBatch, 100) as $chunk) {
+            DB::table('delivery_receipt_details')->insert($chunk);
+        }
+
+        $this->command->info('  Turnover and Delivery records successfully seeded.');
     }
 }
