@@ -106,12 +106,12 @@
                 </tr>
             </table>
 
-            <p style="text-align: center; font-size: 14px; margin-bottom: 20px;">Silakan pilih salah satu tindakan di bawah ini. Anda dapat langsung mengklik tombol ini dari email Anda tanpa perlu login.</p>
+            <p style="text-align: center; font-size: 14px; margin-bottom: 20px;">Silakan pilih salah satu tindakan di bawah ini. Anda akan diarahkan ke halaman web untuk melakukan konfirmasi akhir.</p>
             
             <div class="action-buttons">
                 <!-- Gunakan URL Signed bawaan Laravel -->
-                <a href="{{ URL::signedRoute('retur.email.approve', ['id' => $retur->id, 'status' => 'Approved']) }}" class="btn btn-approve">Setujui Retur</a>
-                <a href="{{ URL::signedRoute('retur.email.approve', ['id' => $retur->id, 'status' => 'Rejected']) }}" class="btn btn-reject">Tolak Retur</a>
+                <a href="{{ URL::signedRoute('retur.email.approve', ['id' => $retur->id, 'manager_id' => $managerId, 'status' => 'Approved']) }}" class="btn btn-approve">Setujui Retur</a>
+                <a href="{{ URL::signedRoute('retur.email.approve', ['id' => $retur->id, 'manager_id' => $managerId, 'status' => 'Rejected']) }}" class="btn btn-reject">Tolak Retur</a>
             </div>
         </div>
         <div class="footer">

@@ -16,14 +16,16 @@ class ReturnApprovalMail extends Mailable
 
     public $retur;
     public $storeName;
+    public $managerId;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($retur, $storeName)
+    public function __construct($retur, $storeName, $managerId)
     {
         $this->retur = $retur;
         $this->storeName = $storeName;
+        $this->managerId = $managerId;
     }
 
     /**
