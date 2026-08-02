@@ -30,7 +30,7 @@ class ReturnController extends Controller
     /**
      * Menampilkan form retur
      */
-   public function create()
+    public function create()
     {
         return view('toko.retur-form');
     }
@@ -68,15 +68,15 @@ class ReturnController extends Controller
                     $imagePaths[] = $file->store('bukti_retur', 'public');
                 }
             }
-            
+
             $returnCode = 'RET-' . strtoupper(Str::random(8));
-            
+
             // 3. SIMPAN KE TABEL RETUR (DIPISAH)
             $returnId = DB::table('returns')->insertGetId([
                 'return_code' => $returnCode,
                 'store_id' => $request->store_id,
-                'reason' => $request->reason, 
-                'notes' => $request->notes,   
+                'reason' => $request->reason,
+                'notes' => $request->notes,
                 'proof_image' => json_encode($imagePaths),
                 'status' => 'Pending',
                 'created_at' => now(),
@@ -100,11 +100,11 @@ class ReturnController extends Controller
                 // Gabungkan details
                 $returObj->barcode = $request->barcode;
                 $returObj->quantity = $request->quantity;
-                
+
                 $storeName = $store->store_name ?? 'Mitra Toko';
 
                 // Cari semua pengguna yang memiliki hak akses (role) sebagai 'superadmin' atau 'admin'
-                $managers = User::whereHas('role', function($q) {
+                $managers = User::whereHas('role', function ($q) {
                     $q->whereIn('role_name', ['superadmin', 'admin', 'manajer']);
                 })->get();
 
@@ -112,7 +112,7 @@ class ReturnController extends Controller
                 foreach ($managers as $manager) {
                     Mail::to($manager->email)->send(new ReturnApprovalMail($returObj, $storeName, $manager->id));
                 }
-            } catch (\Exception $emailError) {
+            } catch (\Throwable $emailError) {
                 // Jika gagal kirim email, diamkan saja agar retur tetap berhasil tersimpan
                 Log::error('Gagal mengirim email notifikasi retur: ' . $emailError->getMessage());
             }
@@ -121,7 +121,6 @@ class ReturnController extends Controller
                 'success' => true,
                 'message' => 'Pengajuan retur dengan banyak foto berhasil dikirim!'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -129,7 +128,7 @@ class ReturnController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * TAHAP B: Manajer Memproses Retur
      */
@@ -163,8 +162,8 @@ class ReturnController extends Controller
                     $allocationDetail = AllocationDetail::whereHas('allocation', function ($q) use ($returnOrder) {
                         $q->where('store_id', $returnOrder->store_id);
                     })
-                    ->where('barcode', $detail->barcode)
-                    ->first();
+                        ->where('barcode', $detail->barcode)
+                        ->first();
 
                     if ($allocationDetail) {
                         // Tambahkan jumlah barang rusak ke kolom quantity_returned
@@ -192,7 +191,7 @@ class ReturnController extends Controller
     {
         $status = $request->query('status'); // 'Approved' atau 'Rejected'
         $managerId = $request->query('manager_id');
-        
+
         if (!in_array($status, ['Approved', 'Rejected'])) {
             return view('toko.email-approval-result', [
                 'status' => 'error',
@@ -264,8 +263,8 @@ class ReturnController extends Controller
                     $allocationDetail = AllocationDetail::whereHas('allocation', function ($q) use ($returnOrder) {
                         $q->where('store_id', $returnOrder->store_id);
                     })
-                    ->where('barcode', $detail->barcode)
-                    ->first();
+                        ->where('barcode', $detail->barcode)
+                        ->first();
 
                     if ($allocationDetail) {
                         $allocationDetail->increment('quantity_returned', $detail->quantity);
@@ -278,9 +277,8 @@ class ReturnController extends Controller
             return view('toko.email-approval-result', [
                 'status' => 'success',
                 'retur' => $returnOrder,
-                'message' => 'Keputusan Anda ('.($status == 'Approved' ? 'Setuju' : 'Tolak').') telah berhasil disimpan.'
+                'message' => 'Keputusan Anda (' . ($status == 'Approved' ? 'Setuju' : 'Tolak') . ') telah berhasil disimpan.'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return view('toko.email-approval-result', [
@@ -461,7 +459,7 @@ class ReturnController extends Controller
     public function mulaiTerima($logistic_id)
     {
         $storeId = Auth::user()->store_id;
-        
+
         $logistic = DB::table('logistic')
             ->where('id_mitra', $storeId)
             ->where('id_logistic', $logistic_id)
@@ -584,7 +582,6 @@ class ReturnController extends Controller
             }
 
             DB::commit();
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
