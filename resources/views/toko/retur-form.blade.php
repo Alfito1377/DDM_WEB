@@ -3,13 +3,13 @@
 @section('content')
 <script src="https://unpkg.com/html5-qrcode"></script>
 
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-    <div class="flex items-center justify-between mb-8">
+<div class="max-w-2xl mx-auto bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Form Pengajuan Retur</h1>
-            <p class="text-sm text-gray-500 mt-1">Ajukan pengembalian benih yang bermasalah atau kedaluwarsa dengan cepat.</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Form Pengajuan Retur</h1>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">Ajukan pengembalian benih yang bermasalah atau kedaluwarsa dengan cepat.</p>
         </div>
-        <span class="bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Panel Toko</span>
+        <span class="bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider self-start sm:self-auto">{{ Auth::user()->role->role_name == 'pekerja_lapang' ? 'Panel Lapangan' : 'Panel Toko' }}</span>
     </div>
 
     <form id="formRetur" class="space-y-5">
@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1.5">Jumlah Diretur (Pack)</label>
                 <input type="number" id="quantity" name="quantity" required class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" min="1" placeholder="0">

@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
         $manajerRoleId = DB::table('roles')->where('role_name', 'admin')->value('id');
 
         // 2. Buat Pengguna Sistem
-        DB::table('users')->insert([
+        DB::table('users')->insertOrIgnore([
             [
                 'role_id' => $adminRoleId,
                 'store_id' => null,
@@ -37,5 +37,41 @@ class UserSeeder extends Seeder
             //     'password' => Hash::make('admin1234'),
             // ],
         ]);
+
+        // 3. Buat Role, Toko Virtual, dan User untuk Pekerja Lapang
+        $pekerjaLapangRoleId = DB::table('roles')->where('role_name', 'pekerja_lapang')->value('id');
+        if (!$pekerjaLapangRoleId) {
+            $pekerjaLapangRoleId = DB::table('roles')->insertGetId([
+                'role_name' => 'pekerja_lapang',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $virtualStoreId = DB::table('stores')->where('store_name', 'Gudang Pekerja Lapang Utama')->value('id');
+        if (!$virtualStoreId) {
+            $virtualStoreId = DB::table('stores')->insertGetId([
+                'store_name' => 'Gudang Pekerja Lapang Utama',
+                'owner_name' => 'Sistem Internal',
+                'phone_number' => '00000000',
+                'address' => 'Mobile / Virtual',
+                'jenis_mitra_id' => 1,
+                'qr_token_login' => \Illuminate\Support\Str::random(40),
+                'qr_token_checkpoint' => \Illuminate\Support\Str::random(40),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $existUser = DB::table('users')->where('email', 'lapangan@gmail.com')->first();
+        if (!$existUser) {
+            DB::table('users')->insert([
+                'role_id' => $pekerjaLapangRoleId,
+                'store_id' => $virtualStoreId,
+                'name' => 'Pekerja Lapang 1',
+                'email' => 'lapangan@gmail.com',
+                'password' => Hash::make('password123'),
+            ]);
+        }
     }
 }

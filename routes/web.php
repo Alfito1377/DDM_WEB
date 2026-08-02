@@ -18,6 +18,7 @@ Route::get('/', function () {
         if ($roleName === 'superadmin') return redirect('/superadmin/register-toko');
         if ($roleName === 'admin') return redirect('/admin/dashboard');
         if ($roleName === 'toko') return redirect('/toko/penerimaan');
+        if ($roleName === 'pekerja_lapang') return redirect('/lapangan/retur');
     }
     return view('auth.login');
 })->name('login');
@@ -120,5 +121,10 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::delete('/retur/{id}/batal', [ReturnController::class, 'cancel']);
     Route::get('/panduan', [KnowledgeBaseController::class, 'panduanToko']);
     Route::get('/profil', [ReturnController::class, 'profilToko']);
-    Route::post('/profil/ganti-password', [ReturnController::class, 'updatePasswordToko']);
+});
+
+// 6. AKSES KHUSUS PEKERJA LAPANG
+Route::middleware(['auth', 'role:pekerja_lapang'])->prefix('lapangan')->group(function () {
+    Route::get('/retur', [ReturnController::class, 'createLapangan']);
+    Route::post('/retur', [ReturnController::class, 'store']);
 });
