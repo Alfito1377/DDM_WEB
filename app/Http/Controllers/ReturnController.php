@@ -34,6 +34,14 @@ class ReturnController extends Controller
     {
         return view('toko.retur-form');
     }
+
+    /**
+     * Menampilkan form retur untuk pekerja lapang
+     */
+    public function createLapangan()
+    {
+        return view('toko.retur-form');
+    }
     /**
      * TAHAP A: Toko Mengajukan Retur (Mendukung Banyak Foto)
      */
