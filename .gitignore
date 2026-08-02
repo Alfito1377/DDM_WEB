@@ -26,3 +26,8 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .env
+# AI Service (Python)
+ai-service/venv/
+ai-service/__pycache__/
+ai-service/chroma_db/
+*.pyc

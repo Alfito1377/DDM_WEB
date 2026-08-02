@@ -61,7 +61,10 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
 
 // 4. AKSES KHUSUS ADMIN / MANAJER
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-
+    Route::get('/dashboard', function () {
+        return view('manajer.dashboard');
+    });
+    Route::get('/dashboard', [DashboardController::class, 'indexManager']);
 });
 
 // 5. AKSES KHUSUS TOKO
@@ -82,43 +85,6 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::post('/profil/ganti-password', [ReturnController::class, 'updatePasswordToko']);
 });
 
-Route::get('/api/historical-turnover', [ForecastingController::class, 'getHistoricalTurnover']);
 
 
 
-/// sementara untuk cek toko
-Route::get('/dev-login-toko', function () {
-    $user = \App\Models\User::whereHas('role', function ($query) {
-        $query->where('role_name', 'toko');
-    })->first();
-
-    if ($user) {
-        Auth::login($user);
-
-        return redirect('/toko')->with('success', 'Bypass login berhasil!');
-    }
-
-    return 'Gagal bypass: User dengan role "toko" tidak ditemukan di database Anda.';
-});
-
-Route::get('/test-login-sage', function (SageApiService $sageApi) {
-    $token = $sageApi->getToken();
-
-    if ($token) {
-        return response()->json([
-            'status' => 'SUKSES',
-            'pesan' => 'Koneksi ke API Sage berhasil!',
-            'token' => $token
-        ]);
-    }
-
-    return response()->json([
-        'status' => 'GAGAL',
-        'pesan' => 'Gagal mendapatkan token. Silakan cek kredensial di file .env atau lihat log error.'
-    ], 500);
-});
-
-Route::get('/test-sage-api', function (SageApiService $sageApi) {
-    $products = $sageApi->getProducts(1, 5);
-    return response()->json($products);
-});
