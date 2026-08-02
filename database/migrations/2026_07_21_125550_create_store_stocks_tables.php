@@ -14,18 +14,18 @@ return new class extends Migration
         Schema::create('store_stocks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained('stores')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->string('barcode');
             $table->integer('quantity')->default(0);
             $table->timestamps();
 
             // Store ID dan Product ID harus unik kombinasinya
-            $table->unique(['store_id', 'product_id']);
+            $table->unique(['store_id', 'barcode']);
         });
 
         Schema::create('store_stock_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained('stores')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->string('barcode');
             $table->enum('type', ['in', 'out'])->default('in');
             $table->integer('quantity');
             $table->timestamps();

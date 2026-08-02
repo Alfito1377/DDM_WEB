@@ -13,19 +13,9 @@ class RealisticLogisticSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('logistic_scans')->truncate();
         DB::table('logistic')->truncate();
-        DB::table('products')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // 2. Siapkan Data Produk Master
-        $products = [
-            ['product_code' => 'P-JGG-01', 'barcode' => '8991234567891', 'product_name' => 'Benih Jagung Hibrida Bisi-18', 'base_stock' => 100],
-            ['product_code' => 'P-PDI-02', 'barcode' => '8991234567892', 'product_name' => 'Benih Padi Inpari 32', 'base_stock' => 200],
-            ['product_code' => 'P-PUP-03', 'barcode' => '8991234567893', 'product_name' => 'Pupuk Urea Non-Subsidi 50kg', 'base_stock' => 50],
-        ];
-        
-        foreach ($products as $p) {
-            DB::table('products')->insert(array_merge($p, ['created_at' => now(), 'updated_at' => now()]));
-        }
+
 
         $driver = DB::table('driver')->first();
         $vehicle = DB::table('vehicle')->first();

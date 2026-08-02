@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('return_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('return_id')->constrained('returns')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->string('barcode');
             
             $table->integer('quantity');
             $table->enum('reason', ['Cacat', 'Rusak', 'Kedaluwarsa', 'Lainnya']);
