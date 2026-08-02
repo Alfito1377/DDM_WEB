@@ -115,7 +115,7 @@
             </div>
         </div>
         <div class="footer">
-            <p>Email ini dikirim secara otomatis oleh Sistem Jual Benih App.</p>
+            <!-- <p>Email ini dikirim secara otomatis oleh Sistem Jual Benih App.</p> -->
         </div>
     </div>
 </body>
