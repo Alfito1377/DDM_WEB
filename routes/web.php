@@ -31,8 +31,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {});
 
 // 2.5 1-Click Email Approval (Signed URL, no auth required)
-Route::get('/retur/email-approve/{id}', [ReturnController::class, 'emailApprove'])
+Route::get('/retur/email-approve/{id}', [ReturnController::class, 'emailApproveView'])
     ->name('retur.email.approve')
+    ->middleware('signed');
+Route::post('/retur/email-approve/{id}', [ReturnController::class, 'emailApproveProcess'])
+    ->name('retur.email.approve.process')
     ->middleware('signed');
 
 // 3. AKSES KHUSUS SUPERADMIN

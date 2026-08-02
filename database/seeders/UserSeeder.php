@@ -22,6 +22,13 @@ class UserSeeder extends Seeder
                 'email' => 'superadmin@gmail.com',
                 'password' => Hash::make('admin1234'),
             ],
+                        [
+                'role_id' => $adminRoleId,
+                'store_id' => null,
+                'name' => 'Super Admin',
+                'email' => 'muhammadyuuya888@gmail.com',
+                'password' => Hash::make('admin1234'),
+            ],
             [
                 'role_id' => $manajerRoleId,
                 'store_id' => null,

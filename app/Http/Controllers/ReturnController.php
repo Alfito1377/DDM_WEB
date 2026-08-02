@@ -102,7 +102,7 @@ class ReturnController extends Controller
 
                 // Kirim email ke masing-masing manajer
                 foreach ($managers as $manager) {
-                    Mail::to($manager->email)->send(new ReturnApprovalMail($returObj, $storeName));
+                    Mail::to($manager->email)->send(new ReturnApprovalMail($returObj, $storeName, $manager->id));
                 }
             } catch (\Exception $emailError) {
                 // Jika gagal kirim email, diamkan saja agar retur tetap berhasil tersimpan
@@ -178,11 +178,12 @@ class ReturnController extends Controller
     }
 
     /**
-     * TAHAP B (Email): Manajer Memproses Retur via Tautan Email (1-Click Approval)
+     * TAHAP B (Email): GET - Landing Page Konfirmasi
      */
-    public function emailApprove(Request $request, $id)
+    public function emailApproveView(Request $request, $id)
     {
         $status = $request->query('status'); // 'Approved' atau 'Rejected'
+        $managerId = $request->query('manager_id');
         
         if (!in_array($status, ['Approved', 'Rejected'])) {
             return view('toko.email-approval-result', [
@@ -208,19 +209,45 @@ class ReturnController extends Controller
             ]);
         }
 
+        // Tampilkan view konfirmasi
+        return view('toko.email-approval-confirm', compact('returnOrder', 'status', 'managerId'));
+    }
+
+    /**
+     * TAHAP B (Email): POST - Proses Konfirmasi (Mencegah GET Mutation)
+     */
+    public function emailApproveProcess(Request $request, $id)
+    {
+        $status = $request->query('status');
+        $managerId = $request->query('manager_id');
+
         try {
             DB::beginTransaction();
 
-            // 1. Update status di tabel returns
-            // Karena ini via email, kita bisa menganggap user manager pertama/superadmin sebagai yang memproses, atau null (sistem)
-            // Namun karena tabel returns mungkin mewajibkan manager_id, mari kita cari user superadmin pertama
-            $manager = User::whereHas('role', function($q) {
-                $q->where('role_name', 'superadmin');
-            })->first();
+            // Gunakan Pessimistic Locking untuk mencegah race condition
+            $returnOrder = ReturnOrder::with('details')->lockForUpdate()->find($id);
 
+            if (!$returnOrder) {
+                DB::rollBack();
+                return view('toko.email-approval-result', [
+                    'status' => 'error',
+                    'message' => 'Data retur tidak ditemukan.'
+                ]);
+            }
+
+            if ($returnOrder->status !== 'Pending') {
+                DB::rollBack();
+                return view('toko.email-approval-result', [
+                    'status' => 'error',
+                    'retur' => $returnOrder,
+                    'message' => 'Retur ini sudah diproses sebelumnya (Status saat ini: ' . $returnOrder->status . ').'
+                ]);
+            }
+
+            // 1. Update status di tabel returns menggunakan ID manajer asli
             $returnOrder->update([
                 'status' => $status,
-                'manager_id' => $manager ? $manager->id : null,
+                'manager_id' => $managerId,
             ]);
 
             // 2. Jika disetujui (Approved), kalkulasi ulang stok di tabel alokasi
