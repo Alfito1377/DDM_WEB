@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DriversModel;
+use App\Models\JenisMitraModel;
+use App\Models\LogisticModel;
+use App\Models\StoresModel;
+use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -9,33 +14,103 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+
     /**
-     * 1. Menampilkan Halaman Daftar Mitra Toko
+     * Variabel
      */
-    public function daftarToko()
+    public $bulan = [
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember'
+    ];
+
+    /**
+     * Format Data Tanggal
+     */
+    function formatDate($date)
     {
-        // 1. Ambil data toko beserta nama sales (menggunakan leftJoin)
-        $stores = DB::table('stores')
-            ->leftJoin('users', 'stores.sales_id', '=', 'users.id')
-            ->select('stores.*', 'users.name as sales_name')
-            ->orderBy('stores.created_at', 'desc')
-            ->get();
+        if($date == null) {
+            return "-";
+        }
+        $date = explode(" ", $date);
+        $tanggal = explode("-", $date[0]);
+        $jam = explode(":", $date[1]);
+        return $tanggal[2] . " " . $this->bulan[(int)$tanggal[1]] . " " . $tanggal[0] . " " . $jam[0] . ":" . $jam[1] . ":" . $jam[2];
+    }
 
-        // 2. Ambil data user yang memiliki role 'sales' atau 'admin' untuk dropdown di Modal
-        $salesList = DB::table('users')
-            ->join('roles', 'users.role_id', '=', 'roles.id')
-            ->whereIn('roles.role_name', ['Sales', 'Admin', 'sales', 'admin'])
-            ->select('users.id', 'users.name')
-            ->get();
+    /**
+     * Format Data Tanggal
+     */
+    function formatStatus($status)
+    {
+        if($status == null) {
+            return "-";
+        }
 
-        // 3. Kirim keduanya ke view daftar-toko
-        return view('admin.daftar-toko', compact('stores', 'salesList'));
+        if($status == 'pending') {
+            return [
+                'label' => 'Pending',
+                'color' => 'bg-yellow-100 text-yellow-800'
+            ];
+        } else if($status == 'packed') {
+            return [
+                'label' => 'Packed',
+                'color' => 'bg-blue-100 text-blue-800'
+            ];
+        } else if($status == 'out_of_transit') {
+            return [
+                'label' => 'Out of Transit',
+                'color' => 'bg-purple-100 text-purple-800'
+            ];
+        } else if($status == 'in_transit') {
+            return [
+                'label' => 'In Transit',
+                'color' => 'bg-yellow-100 text-yellow-800'
+            ];
+        } else if($status == 'completed') {
+            return [
+                'label' => 'Completed',
+                'color' => 'bg-green-100 text-green-800'
+            ];
+        } else if($status == 'cancelled') {
+            return [
+                'label' => 'Cancelled',
+                'color' => 'bg-red-100 text-red-800'
+            ];
+        }
+        return $status;
+    }
+
+
+    /**
+     * 1. Menampilkan Halaman Daftar Mitra
+     */
+    public function daftarCustomer()
+    {
+        $stores = StoresModel::all();
+        $jenisMitraList = JenisMitraModel::all();
+
+        foreach ($stores as $store) {
+            $store->jenis_mitra = JenisMitraModel::find($store->jenis_mitra_id)->nama_jenis_mitra;
+        }
+
+        // 3. Kirim keduanya ke view daftar-customer
+        return view('admin.daftar_customer.index', compact('stores', 'jenisMitraList'));
     }
 
     /**
      * 2. Memproses Form Tambah Toko Baru
      */
-    public function storeToko(Request $request)
+    public function storeCustomer(Request $request)
     {
         // Validasi Input Form (Sudah ditambahkan owner, phone, dan sales_id)
         $request->validate([
@@ -43,14 +118,15 @@ class AdminController extends Controller
             'owner_name' => 'required|string|max:255',
             'phone_number' => 'required|string|max:20',
             'address' => 'required|string',
-            'sales_id' => 'required|integer'
+            'jenis_mitra_id' => 'required|integer'
         ]);
 
         // Menggunakan transaksi DB agar aman
         DB::beginTransaction();
         try {
             // Buat Token QR Unik (40 Karakter Acak)
-            $token = Str::random(40);
+            $token_login = Str::random(40);
+            $token_checkpoint = Str::random(40);
 
             // Simpan data toko ke database (Sudah ditambahkan kolom baru)
             $storeId = DB::table('stores')->insertGetId([
@@ -58,22 +134,9 @@ class AdminController extends Controller
                 'owner_name' => $request->owner_name,
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
-                'sales_id' => $request->sales_id,
-                'qr_token' => $token,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Buat Akun (User) untuk toko tersebut agar bisa login
-            $tokoRoleId = DB::table('roles')->where('role_name', 'Toko')->value('id');
-            $email = 'toko_' . strtolower(Str::random(5)) . '@jualbenih.co.id';
-
-            DB::table('users')->insert([
-                'role_id' => $tokoRoleId,
-                'store_id' => $storeId,
-                'name' => 'Admin ' . $request->store_name,
-                'email' => $email,
-                'password' => Hash::make('12345678'), // Password default
+                'jenis_mitra_id' => $request->jenis_mitra_id,
+                'qr_token_login' => $token_login,
+                'qr_token_checkpoint' => $token_checkpoint,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -81,12 +144,15 @@ class AdminController extends Controller
             DB::commit();
 
             // Susun URL Login dan Gambar QR Code
-            $loginUrl = url('/login/qr/' . $token);
+            $loginUrl = url('/login/qr/' . $token_login);
+            $checkpointUrl = url('/login/qr/checkpoint/' . $token_checkpoint);
             $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($loginUrl);
+            $qrCheckpointUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($checkpointUrl);
 
             return response()->json([
                 'success' => true,
-                'qr_image' => $qrImageUrl,
+                'qr_image_login' => $qrImageUrl,
+                'qr_checkpoint_image' => $qrCheckpointUrl,
                 'login_url' => $loginUrl,
             ]);
         } catch (\Exception $e) {
@@ -99,20 +165,43 @@ class AdminController extends Controller
     }
 
     /**
-     * 3. Menampilkan Halaman Master Data Produk
+     * 3. Menampilkan Halaman Master Data Pengiriman
      */
-    public function daftarProduk()
+    public function daftarPengiriman()
     {
-        // Mengambil semua data produk dari database
-        $products = DB::table('products')->orderBy('created_at', 'desc')->get();
+        // Mengambil semua data pengiriman dari database
+        $logistics = LogisticModel::latest()->get();
 
-        return view('admin.daftar-produk', compact('products'));
+        foreach ($logistics as $logistic) {
+            $logistic->departedAt = $this->formatDate($logistic->departedAt);
+            $logistic->status = $this->formatStatus($logistic->status);
+            if ($logistic->id_mitra) {
+                $mitra = StoresModel::find($logistic->id_mitra);
+                $logistic->mitra = $mitra;
+            } else {
+                $logistic->mitra = null;
+            }
+            if($logistic->driverId) {
+                $driver = DriversModel::where('id_driver', $logistic->driverId)->first();
+                $logistic->driver = $driver;
+            } else {
+                $logistic->driver = null;
+            }
+            if($logistic->vehicleId) {
+                $vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
+                $logistic->vehicle = $vehicle;
+            } else {
+                $logistic->vehicle = null;
+            }
+        }
+
+        return view('admin.pengiriman.index', compact('logistics'));
     }
 
     /**
      * 4. Memproses Form Tambah Produk Baru
      */
-    public function storeProduk(Request $request)
+    public function storePengiriman(Request $request)
     {
         // Validasi input produk
         $request->validate([
@@ -142,5 +231,121 @@ class AdminController extends Controller
                 'message' => 'Gagal menyimpan produk: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * 5. Get data edit customer by ID
+     */
+    public function editCustomer($id)
+    {
+        $store = StoresModel::find($id);
+
+        $store->jenis_mitra = JenisMitraModel::find($store->jenis_mitra_id)->nama_jenis_mitra;
+
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer tidak ditemukan.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $store
+        ]);
+    }
+
+    /**
+     * 6. Update data customer by ID
+     */
+    public function updateCustomer(Request $request, $id)
+    {
+        $store = StoresModel::find($id);
+        
+        $request->validate([
+            'store_name' => 'required|string|max:255',
+            'owner_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'address' => 'required|string',
+            'jenis_mitra_id' => 'required|integer'
+        ]);
+
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer tidak ditemukan.'
+            ], 404);
+        }
+
+        $store->update($request->all());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data customer berhasil diperbarui.'
+        ]);
+    }
+
+    /**
+     * 7. Delete data customer by ID
+     */
+    public function destroyCustomer($id)
+    {
+        $store = StoresModel::find($id);
+
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer tidak ditemukan.'
+            ], 404);
+        }
+
+        $store->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data customer berhasil dihapus.'
+        ]);
+    }
+
+    /**
+     * 8. Get detail pengiriman by ID
+     */
+    public function detailPengiriman($id)
+    {
+        // Mengambil semua data pengiriman dari database
+        $logistics = LogisticModel::find($id);
+
+        if (!$logistics) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengiriman tidak ditemukan.'
+            ], 404);
+        }
+
+        $logistics->departedAt = $this->formatDate($logistics->departedAt);
+        $logistics->status = $this->formatStatus($logistics->status);
+        if ($logistics->id_mitra) {
+            $mitra = StoresModel::find($logistics->id_mitra);
+            $logistics->mitra = $mitra;
+            $logistics->mitra->jenis_mitra = JenisMitraModel::find($mitra->jenis_mitra_id)->nama_jenis_mitra;
+        } else {
+            $logistics->mitra = null;
+        }
+        if($logistics->driverId) {
+            $driver = DriversModel::where('id_driver', $logistics->driverId)->first();
+            $logistics->driver = $driver;
+        } else {
+            $logistics->driver = null;
+        }
+        if($logistics->vehicleId) {
+            $vehicle = VehicleModel::where('id_vehicle', $logistics->vehicleId)->first();
+            $logistics->vehicle = $vehicle;
+        } else {
+            $logistics->vehicle = null;
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $logistics
+        ]);
     }
 }

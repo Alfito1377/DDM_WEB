@@ -330,4 +330,186 @@ class ReturnController extends Controller
 
         return view('toko.profil', compact('user', 'store'));
     }
+
+    /**
+     * Halaman Penerimaan Barang (Daftar Pengiriman)
+     */
+    public function penerimaan()
+    {
+        $storeId = Auth::user()->store_id;
+
+        // Ambil data paket yang sedang dalam perjalanan ke toko ini
+        $inTransit = DB::table('logistic')
+            ->leftJoin('vehicle', 'logistic.vehicleId', '=', 'vehicle.id_vehicle')
+            ->leftJoin('driver', 'logistic.driverId', '=', 'driver.id_driver')
+            ->where('logistic.id_mitra', $storeId)
+            ->whereIn('logistic.status', ['in_transit', 'out_of_transit'])
+            ->select('logistic.*', 'vehicle.plateNo', 'vehicle.vehicleType', 'driver.name as driverName')
+            ->orderBy('logistic.departedAt', 'desc')
+            ->get();
+
+        foreach ($inTransit as $logistic) {
+            $logistic->total_items = DB::table('logistic_scans')->where('logistic_id', $logistic->id)->count();
+            $logistic->received_items = DB::table('logistic_scans')->where('logistic_id', $logistic->id)->whereNotNull('received_at')->count();
+        }
+
+        return view('toko.penerimaan', compact('inTransit'));
+    }
+
+    /**
+     * Halaman Mulai Terima (Scanner per Pengiriman)
+     */
+    public function mulaiTerima($logistic_id)
+    {
+        $storeId = Auth::user()->store_id;
+        
+        $logistic = DB::table('logistic')
+            ->where('id_mitra', $storeId)
+            ->where('id_logistic', $logistic_id)
+            ->first();
+
+        if (!$logistic) {
+            return redirect('/toko/penerimaan')->with('error', 'Pengiriman tidak ditemukan atau bukan milik toko Anda.');
+        }
+
+        $scans = DB::table('logistic_scans')
+            ->where('logistic_id', $logistic->id)
+            ->orderBy('received_at', 'desc')
+            ->get();
+
+        return view('toko.mulai_terima', compact('logistic', 'scans'));
+    }
+
+    /**
+     * Proses Pemindaian (Scan) Penerimaan Barang
+     */
+    public function scanPenerimaan(Request $request)
+    {
+        $request->validate([
+            'logistic_id' => 'required|string',
+            'barcode' => 'required|string',
+        ]);
+
+        $storeId = Auth::user()->store_id;
+        $barcode = $request->barcode;
+        $logisticIdStr = $request->logistic_id;
+
+        // Validasi pengiriman milik toko ini
+        $logistic = DB::table('logistic')
+            ->where('id_mitra', $storeId)
+            ->where('id_logistic', $logisticIdStr)
+            ->first();
+
+        if (!$logistic) {
+            return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+        }
+
+        // Cari record yang BELUM discan terlebih dahulu
+        $scanRecord = DB::table('logistic_scans')
+            ->where('logistic_id', $logistic->id)
+            ->where('barcode', $barcode)
+            ->whereNull('received_at')
+            ->first();
+
+        if (!$scanRecord) {
+            // Jika tidak ketemu yang belum discan, cek apakah sebenarnya ada tapi sudah discan semua
+            $alreadyScanned = DB::table('logistic_scans')
+                ->where('logistic_id', $logistic->id)
+                ->where('barcode', $barcode)
+                ->exists();
+
+            if ($alreadyScanned) {
+                return response()->json([
+                    'status' => 'warning',
+                    'message' => 'Semua barang dengan barcode ini sudah discan (diterima)!'
+                ], 400);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Barcode ini TIDAK ADA di dalam manifes/daftar pengiriman ini!'
+            ], 404);
+        }
+
+        // Cari produk master berdasarkan barcode
+        $product = DB::table('products')->where('barcode', $barcode)->orWhere('product_code', $barcode)->first();
+        if (!$product) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak terdaftar di database master.'
+            ], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Update scan record menjadi diterima
+            DB::table('logistic_scans')
+                ->where('id', $scanRecord->id)
+                ->update([
+                    'received_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+            // 2. Cek apakah toko sudah memiliki record stok untuk produk ini
+            $storeStock = DB::table('store_stocks')
+                ->where('store_id', $storeId)
+                ->where('product_id', $product->id)
+                ->lockForUpdate() // Mencegah race condition
+                ->first();
+
+            if ($storeStock) {
+                DB::table('store_stocks')->where('id', $storeStock->id)->increment('quantity', 1);
+            } else {
+                DB::table('store_stocks')->insert([
+                    'store_id' => $storeId,
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // 3. Catat ke log stok
+            DB::table('store_stock_logs')->insert([
+                'store_id' => $storeId,
+                'product_id' => $product->id,
+                'type' => 'in',
+                'quantity' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // 4. Cek apakah semua barang sudah diterima
+            $totalItems = DB::table('logistic_scans')->where('logistic_id', $logistic->id)->count();
+            $receivedItems = DB::table('logistic_scans')->where('logistic_id', $logistic->id)->whereNotNull('received_at')->count();
+
+            if ($totalItems > 0 && $totalItems == $receivedItems) {
+                DB::table('logistic')->where('id', $logistic->id)->update([
+                    'status' => 'completed',
+                    'arrivedAt' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem saat memproses data: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Berhasil! 1x ' . $product->product_name . ' diterima.',
+            'data' => [
+                'barcode' => $product->barcode ?? $product->product_code,
+                'product_name' => $product->product_name,
+                'scanned_at' => now()->format('H:i')
+            ]
+        ]);
+    }
 }

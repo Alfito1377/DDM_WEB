@@ -10,42 +10,25 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminRoleId = DB::table('roles')->where('role_name', 'Admin')->value('id');
-        $manajerRoleId = DB::table('roles')->where('role_name', 'Manajer')->value('id');
-        $tokoRoleId = DB::table('roles')->where('role_name', 'Toko')->value('id');
-
-        // 1. Buat Toko Dummy Terlebih Dahulu di tabel stores
-        $storeId = DB::table('stores')->insertGetId([
-            'store_name' => 'Toko Berkah Tani Subang',
-            'address' => 'Jl. Raya Subang No. 45',
-            'qr_token' => 'token-toko-makmur', // <-- Token yang dicocokkan dengan tombol login tadi
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $adminRoleId = DB::table('roles')->where('role_name', 'superadmin')->value('id');
+        $manajerRoleId = DB::table('roles')->where('role_name', 'admin')->value('id');
 
         // 2. Buat Pengguna Sistem
         DB::table('users')->insert([
             [
                 'role_id' => $adminRoleId,
                 'store_id' => null,
-                'name' => 'Ani Admin',
-                'email' => 'admin@admin.com',
-                'password' => Hash::make('12345678'),
+                'name' => 'Super Admin',
+                'email' => 'superadmin@gmail.com',
+                'password' => Hash::make('admin1234'),
             ],
             [
                 'role_id' => $manajerRoleId,
                 'store_id' => null,
-                'name' => 'Alfito Dwi',
-                'email' => 'titodwimirza@gmail.com',
-                'password' => Hash::make('12345678'),
+                'name' => 'Admin',
+                'email' => 'admin@gmail.com',
+                'password' => Hash::make('admin1234'),
             ],
-            [
-                'role_id' => $tokoRoleId,
-                'store_id' => $storeId, // <-- Hubungkan user ini dengan toko di atas
-                'name' => 'Pemilik Berkah Tani',
-                'email' => 'berkahtani@gmail.com', // Tetap punya email untuk jaga-jaga login manual
-                'password' => Hash::make('12345678'),
-            ]
         ]);
     }
 }
