@@ -6,7 +6,6 @@
     <title>Cetak QR - {{ $toko->store_name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* CSS INI WAJIB AGAR WARNA BACKGROUND & GAMBAR TIDAK HILANG SAAT DI-PRINT */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -37,19 +36,14 @@
 </head>
 <body class="bg-gray-200 flex items-center justify-center min-h-screen p-6 font-sans">
 
-    <!-- Tombol Print (Sembunyi otomatis saat kertas dicetak) -->
-    <button onclick="window.print()" class="no-print fixed top-6 right-6 bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-green-800 transition-all flex items-center gap-2 z-50 border-2 border-white">
+    <button onclick="window.print()" class="no-print fixed top-6 right-6 bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-green-800 transition-all flex items-center gap-2 z-50 border-2 border-white">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
         Cetak QR
     </button>
 
-    <!-- KARTU UTAMA -->
-    <!-- Menggunakan lebar statis max-w-[380px] agar proporsinya konsisten layaknya plakat/kartu -->
     <div class="print-container w-full max-w-[380px] bg-[#163c28] rounded-2xl shadow-2xl relative overflow-hidden flex flex-col border border-gray-300">
         
-        <!-- HEADER KARTU: Putih Bersih -->
         <div class="bg-white px-6 py-4 flex items-center gap-4 z-10">
-            <!-- Pastikan path logo benar -->
             <img src="{{ asset('assets/images/Logo.png') }}" alt="Logo PT Sage" class="w-12 h-12 object-contain">
             <div class="border-l-2 border-green-600 pl-3">
                 <p class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-none mb-1">DDM </p>
@@ -59,31 +53,24 @@
             </div>
         </div>
 
-        <!-- Garis Pemisah Estetik (Gradien Sage ke Hijau Tua) -->
         <div class="h-1.5 w-full bg-gradient-to-r from-[#9DC08B] via-green-500 to-[#9DC08B]"></div>
 
-        <!-- BODY KARTU: Hijau Gelap -->
         <div class="px-8 pt-8 pb-6 text-center flex flex-col items-center relative">
             
-            <!-- Badge / Label Tipe QR -->
             <div class="bg-yellow-400 text-yellow-900 text-[11px] font-black px-4 py-1.5 rounded-full tracking-widest uppercase mb-3 shadow-md border border-yellow-300">
                 {{ $title }}
             </div>
 
-            <!-- Nama Toko -->
             <h1 class="text-2xl font-black text-white mb-8 uppercase tracking-wide leading-snug line-clamp-2">
                 {{ $toko->store_name }}
             </h1>
 
-            <!-- BINGKAI QR CODE -->
             <div class="relative w-full max-w-[220px] aspect-square mx-auto mb-2">
-                <!-- Ornamen Reticle Scanner (Sudut Luar) -->
                 <div class="absolute -top-3 -left-3 w-8 h-8 border-t-[5px] border-l-[5px] border-yellow-400 rounded-tl-sm"></div>
                 <div class="absolute -top-3 -right-3 w-8 h-8 border-t-[5px] border-r-[5px] border-yellow-400 rounded-tr-sm"></div>
                 <div class="absolute -bottom-3 -left-3 w-8 h-8 border-b-[5px] border-l-[5px] border-yellow-400 rounded-bl-sm"></div>
                 <div class="absolute -bottom-3 -right-3 w-8 h-8 border-b-[5px] border-r-[5px] border-yellow-400 rounded-br-sm"></div>
                 
-                <!-- Kotak Putih QR -->
                 <div class="w-full h-full bg-white p-3 rounded-xl shadow-inner relative z-10 flex items-center justify-center">
                     <img src="{{ $qrImage }}" alt="{{ $title }}" class="w-full h-full object-contain">
                 </div>

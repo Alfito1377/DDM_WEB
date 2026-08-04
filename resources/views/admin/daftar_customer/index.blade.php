@@ -258,7 +258,6 @@
     
     <div class="flex flex-col items-center mb-4">
         <h1 class="font-bold text-lg text-gray-800 mb-2">QR Code Checkpoint</h1>
-        <!-- Gambar dibungkus link agar bisa diklik -->
         <a id="modalImageLinkCheckpoint" href="#" target="_blank" class="cursor-pointer transition-all hover:scale-105 hover:shadow-lg rounded-xl" title="Klik untuk Cetak QR Checkpoint">
             <img id="modalQrImageCheckpoint" src="" alt="QR Code Checkpoint" class="w-48 h-48 object-contain border-2 border-transparent hover:border-green-400 rounded-xl p-2 transition-colors">
         </a>
