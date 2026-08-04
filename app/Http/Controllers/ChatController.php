@@ -19,7 +19,7 @@ class ChatController extends Controller
             // 2. Tembak data ke AI Service (Python FastAPI)
             $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8000') . '/chat';
             
-            $response = Http::timeout(60)->post($aiServiceUrl, [
+            $response = Http::timeout(180)->post($aiServiceUrl, [
                 'pertanyaan' => $request->pertanyaan
             ]);
 

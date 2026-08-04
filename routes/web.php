@@ -71,6 +71,7 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('superadmin.chat.send');
         Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
         Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
+        Route::get('/mitra/{id}/print-qr', [AdminController::class, 'printQr'])->name('admin.print-qr');
 
         // Graceful fallback for old dashboard routes
         Route::get('/dashboard', function () {

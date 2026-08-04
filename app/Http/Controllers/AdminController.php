@@ -348,4 +348,33 @@ class AdminController extends Controller
             'data' => $logistics
         ]);
     }
+    /**
+     * 9. Cetak QR Code Mitra dengan Background
+     */
+    public function printQr($id, Request $request)
+    {
+        // Ambil data toko berdasarkan ID menggunakan StoresModel
+        $toko = StoresModel::find($id);
+
+        if (!$toko) {
+            abort(404, 'Data Mitra tidak ditemukan');
+        }
+        
+        // Ambil parameter tipe QR (login atau checkpoint)
+        $type = $request->query('type', 'login');
+        
+        // Generate URL QR Code
+        if ($type === 'checkpoint') {
+            $url = urlencode(url('/login/qr/checkpoint?token=' . $toko->qr_token_checkpoint));
+            $title = "QR Code Checkpoint";
+        } else {
+            $url = urlencode(url('/login/qr?token=' . $toko->qr_token_login));
+            $title = "QR Code Login";
+        }
+        
+        $qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . $url;
+
+        // Return ke view khusus cetak di folder admin
+        return view('admin.daftar_customer.print-qr', compact('toko', 'qrImage', 'title'));
+    }
 }
