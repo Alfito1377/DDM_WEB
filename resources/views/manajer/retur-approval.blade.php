@@ -175,6 +175,7 @@
 
 <script>
     // --- FUNGSI MODAL DETAIL ---
+    const storageBaseUrl = "{{ asset('storage') }}";
     function openDetailModal(returData) {
         const modal = document.getElementById('detailModal');
         const modalContent = document.getElementById('modalContent');
@@ -194,7 +195,7 @@
             let images = typeof returData.proof_image === 'string' ? JSON.parse(returData.proof_image) : returData.proof_image;
             if(Array.isArray(images) && images.length > 0) {
                 images.forEach(imgPath => {
-                    const imgUrl = `/storage/${imgPath}`;
+                    const imgUrl = `${storageBaseUrl}/${imgPath}`;
                     const imgElement = `
                         <a href="${imgUrl}" target="_blank" class="block group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm hover:shadow-md transition-all">
                             <img src="${imgUrl}" class="w-full h-32 object-cover transition duration-300 transform group-hover:scale-110" alt="Bukti Retur">
