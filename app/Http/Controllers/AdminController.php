@@ -373,4 +373,5 @@ class AdminController extends Controller
 
         return view('admin.daftar_customer.print-qr', compact('toko', 'qrImage', 'title'));
     }
+    
 }

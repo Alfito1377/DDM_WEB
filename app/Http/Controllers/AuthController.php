@@ -38,12 +38,15 @@ class AuthController extends Controller
      * Memproses data submit checkpoint form via AJAX
      */
     public function storeCheckpoint(Request $request) {
+        // 1. Tambahkan validasi untuk kurir_lat dan kurir_lng
         $request->validate([
             'token' => 'required|string',
             'nama_pengirim' => 'required|string|max:255',
             'nomor_handphone' => 'required|string|max:20',
             'catatan' => 'nullable|string|max:255',
             'selected_shipments' => 'required|string',
+            'kurir_lat' => 'required|numeric',
+            'kurir_lng' => 'required|numeric',
         ]);
 
         $selectedShipments = json_decode($request->selected_shipments, true);
@@ -57,7 +60,45 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Token tidak valid.'], 404);
         }
 
-        // Cari driver berdasarkan nomor HP (dan cocokkan namanya secara longgar)
+        // ==========================================
+        // 2. PENGECEKAN LOKASI GPS (HAVERSINE)
+        // ==========================================
+        if (is_null($store->latitude) || is_null($store->longitude)) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Gagal Checkpoint! Pemilik toko belum mengatur titik koordinat lokasinya di sistem.'
+            ]);
+        }
+
+        $radiusBumi = 6371000; // Radius bumi dalam meter
+        
+        $latKurir = deg2rad($request->kurir_lat);
+        $lngKurir = deg2rad($request->kurir_lng);
+        $latToko  = deg2rad($store->latitude);
+        $lngToko  = deg2rad($store->longitude);
+
+        $deltaLat = $latToko - $latKurir;
+        $deltaLng = $lngToko - $lngKurir;
+
+        $a = sin($deltaLat / 2) * sin($deltaLat / 2) +
+             cos($latKurir) * cos($latToko) *
+             sin($deltaLng / 2) * sin($deltaLng / 2);
+        
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $jarakMeter = $radiusBumi * $c;
+
+        // Batas toleransi jarak (100 meter)
+        $batasToleransi = 100; 
+        
+        if ($jarakMeter > $batasToleransi) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Anda terdeteksi berada sejauh ' . round($jarakMeter) . ' meter dari toko. Anda wajib berada di dalam radius ' . $batasToleransi . ' meter untuk Checkpoint.'
+            ]);
+        }
+        // ==========================================
+
+        // 3. Cari driver berdasarkan nomor HP
         $driver = DB::table('driver')
             ->where('phone', $request->nomor_handphone)
             ->first();
@@ -69,14 +110,14 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Hanya perbarui paket yang statusnya 'in_transit' DI toko ini DAN dibawa oleh KURIR INI
+        // 4. Hanya perbarui paket yang statusnya 'in_transit' DI toko ini DAN dibawa oleh KURIR INI
         $updated = DB::table('logistic')
             ->where('id_mitra', $store->id)
             ->where('status', 'in_transit')
             ->where('driverId', $driver->id_driver)
             ->whereIn('id_logistic', $selectedShipments)
             ->update([
-                'status' => 'out_of_transit', // Driver sudah sampai, tapi toko belum bongkar muat
+                'status' => 'out_of_transit', 
                 'arrivedAt' => now(),
                 'updated_at' => now(),
             ]);
@@ -90,7 +131,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Kedatangan Anda telah dicatat di sistem.',
+            'message' => 'Kedatangan Anda telah dicatat di sistem (Jarak: ' . round($jarakMeter) . 'm).',
             'updated_count' => $updated
         ]);
     }

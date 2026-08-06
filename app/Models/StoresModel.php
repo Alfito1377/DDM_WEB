@@ -18,7 +18,11 @@ class StoresModel extends Model
         'owner_name',
         'phone_number',
         'address',
-        'qr_token',
+        'latitude',
+        'longitude',
+        // 'qr_token',
+        'qr_token_login',
+        'qr_token_checkpoint'
     ];
 
     protected static function boot()

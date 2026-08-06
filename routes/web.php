@@ -38,6 +38,8 @@ Route::get('/retur/email-approve/{id}', [ReturnController::class, 'emailApproveV
 Route::post('/retur/email-approve/{id}', [ReturnController::class, 'emailApproveProcess'])
     ->name('retur.email.approve.process')
     ->middleware('signed');
+Route::post('/checkpoint/verify', [AdminController::class, 'prosesScanCheckpoint'])->name('checkpoint.verify');
+// ...
 
 // 3. AKSES KHUSUS SUPERADMIN & ADMIN
 Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
@@ -109,7 +111,9 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
 
 // 5. AKSES KHUSUS TOKO
 Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
-    Route::get('/', [ReturnController::class, 'indexToko']);
+    Route::get('/', function () {
+        return redirect('/toko/penerimaan');
+    });
     Route::get('/riwayat', [ReturnController::class, 'indexToko']);
 
     // Rute Penerimaan Barang
@@ -122,6 +126,7 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::delete('/retur/{id}/batal', [ReturnController::class, 'cancel']);
     Route::get('/panduan', [KnowledgeBaseController::class, 'panduanToko']);
     Route::get('/profil', [ReturnController::class, 'profilToko']);
+    Route::post('/update-lokasi-otomatis', [ReturnController::class, 'updateLokasiOtomatis'])->name('toko.update.lokasi');
 });
 
 // 6. AKSES KHUSUS PEKERJA LAPANG
