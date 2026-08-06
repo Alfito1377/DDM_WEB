@@ -167,14 +167,27 @@ class AdminController extends Controller
     /**
      * 3. Menampilkan Halaman Master Data Pengiriman
      */
-    public function daftarPengiriman()
+    /**
+     * 3. Menampilkan Halaman Master Data Pengiriman
+     */
+    public function daftarPengiriman(Request $request)
     {
-        // Mengambil semua data pengiriman dari database
-        $logistics = LogisticModel::latest()->get();
+        // Mulai query dari model
+        $query = LogisticModel::latest();
 
+        // Jika ada request filter status dan nilainya tidak kosong
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Ubah get() menjadi paginate(), misalnya 10 data per halaman
+        $logistics = $query->paginate(20);
+
+        // Pertahankan logika loop bawaan kamu (Laravel paginator mendukung foreach langsung)
         foreach ($logistics as $logistic) {
             $logistic->departedAt = $this->formatDate($logistic->departedAt);
             $logistic->status = $this->formatStatus($logistic->status);
+            
             if ($logistic->id_mitra) {
                 $mitra = StoresModel::find($logistic->id_mitra);
                 $logistic->mitra = $mitra;
@@ -195,6 +208,7 @@ class AdminController extends Controller
             }
         }
 
+        // Return ke view (otomatis membawa query string paginate jika ada)
         return view('admin.pengiriman.index', compact('logistics'));
     }
 

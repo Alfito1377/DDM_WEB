@@ -55,10 +55,10 @@
                                 @endphp
                                 <div class="flex items-center justify-center gap-2">
                                     <button
-        onclick="showQR({id: {{ $toko->id }}, storeName: '{{ $toko->store_name }}', qrLoginUrl: '{{ $qrImageLogin }}', qrCheckpointUrl: '{{ $qrImageCheckpoint }}'})"
-        class="px-3 py-1.5 border border-green-200 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 transition">
-        QR Code
-    </button>
+                                        onclick="showQR({id: {{ $toko->id }}, storeName: '{{ $toko->store_name }}', qrLoginUrl: '{{ $qrImageLogin }}', qrCheckpointUrl: '{{ $qrImageCheckpoint }}'})"
+                                        class="px-3 py-1.5 border border-green-200 bg-green-50 text-green-700 rounded-lg text-xs font-bold hover:bg-green-100 transition">
+                                        QR Code
+                                    </button>
                                     <button onclick="openEditModal({{ $toko->id }})"
                                         class="px-3 py-1.5 border border-blue-200 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
                                         Edit
@@ -246,23 +246,29 @@
                         </svg>
                     </button>
                 </div>
-               <div class="flex justify-center items-center gap-6 mb-6">
-    <div class="flex flex-col items-center mb-4">
-        <h1 class="font-bold text-lg text-gray-800 mb-2">QR Code Login</h1>
-        <!-- Gambar dibungkus link agar bisa diklik -->
-        <a id="modalImageLinkLogin" href="#" target="_blank" class="cursor-pointer transition-all hover:scale-105 hover:shadow-lg rounded-xl" title="Klik untuk Cetak QR Login">
-            <img id="modalQrImageLogin" src="" alt="QR Code Login" class="w-48 h-48 object-contain border-2 border-transparent hover:border-green-400 rounded-xl p-2 transition-colors">
-        </a>
-        <p class="text-[10px] text-green-600 mt-2 font-bold animate-pulse">👆 Klik gambar untuk cetak</p>
-    </div>
-    
-    <div class="flex flex-col items-center mb-4">
-        <h1 class="font-bold text-lg text-gray-800 mb-2">QR Code Checkpoint</h1>
-        <a id="modalImageLinkCheckpoint" href="#" target="_blank" class="cursor-pointer transition-all hover:scale-105 hover:shadow-lg rounded-xl" title="Klik untuk Cetak QR Checkpoint">
-            <img id="modalQrImageCheckpoint" src="" alt="QR Code Checkpoint" class="w-48 h-48 object-contain border-2 border-transparent hover:border-green-400 rounded-xl p-2 transition-colors">
-        </a>
-        <p class="text-[10px] text-green-600 mt-2 font-bold animate-pulse">👆 Klik gambar untuk cetak</p>
-    </div>
+                <div class="flex justify-center items-center gap-6 mb-6">
+                    <div class="flex flex-col items-center mb-4">
+                        <h1 class="font-bold text-lg text-gray-800 mb-2">QR Code Login</h1>
+                        <!-- Gambar dibungkus link agar bisa diklik -->
+                        <a id="modalImageLinkLogin" href="#" target="_blank"
+                            class="cursor-pointer transition-all hover:scale-105 hover:shadow-lg rounded-xl"
+                            title="Klik untuk Cetak QR Login">
+                            <img id="modalQrImageLogin" src="" alt="QR Code Login"
+                                class="w-48 h-48 object-contain border-2 border-transparent hover:border-green-400 rounded-xl p-2 transition-colors">
+                        </a>
+                        <p class="text-[10px] text-green-600 mt-2 font-bold animate-pulse">👆 Klik gambar untuk cetak</p>
+                    </div>
+
+                    <div class="flex flex-col items-center mb-4">
+                        <h1 class="font-bold text-lg text-gray-800 mb-2">QR Code Checkpoint</h1>
+                        <a id="modalImageLinkCheckpoint" href="#" target="_blank"
+                            class="cursor-pointer transition-all hover:scale-105 hover:shadow-lg rounded-xl"
+                            title="Klik untuk Cetak QR Checkpoint">
+                            <img id="modalQrImageCheckpoint" src="" alt="QR Code Checkpoint"
+                                class="w-48 h-48 object-contain border-2 border-transparent hover:border-green-400 rounded-xl p-2 transition-colors">
+                        </a>
+                        <p class="text-[10px] text-green-600 mt-2 font-bold animate-pulse">👆 Klik gambar untuk cetak</p>
+                    </div>
                 </div>
                 <p class="text-xs text-center text-gray-500 mb-6">Scan QR ini menggunakan kamera perangkat toko untuk masuk
                     otomatis dan checkpoint sopir untuk konfirmasi.</p>
@@ -398,7 +404,7 @@
             // FUNGSI HAPUS DATA
             async function deleteStore(id, storeName) {
                 if (confirm(
-                    `Apakah Anda yakin ingin menghapus mitra "${storeName}"? Tindakan ini tidak dapat dibatalkan.`)) {
+                        `Apakah Anda yakin ingin menghapus mitra "${storeName}"? Tindakan ini tidak dapat dibatalkan.`)) {
                     try {
                         // Sesuaikan endpoint destroy di Laravel kamu
                         const response = await fetch(`/superadmin/delete-customer/${id}`, {
@@ -422,24 +428,30 @@
             }
 
             // LOGIKA MODAL LIHAT QR LAMA
- // Pastikan ada kata "id" di dalam kurung kurawal ini
-function showQR({ id, storeName, qrLoginUrl, qrCheckpointUrl }) {
-    document.getElementById('modalStoreName').innerText = storeName;
-    document.getElementById('modalQrImageLogin').src = qrLoginUrl;
-    document.getElementById('modalQrImageCheckpoint').src = qrCheckpointUrl;
+            // Pastikan ada kata "id" di dalam kurung kurawal ini
+            function showQR({
+                id,
+                storeName,
+                qrLoginUrl,
+                qrCheckpointUrl
+            }) {
+                document.getElementById('modalStoreName').innerText = storeName;
+                document.getElementById('modalQrImageLogin').src = qrLoginUrl;
+                document.getElementById('modalQrImageCheckpoint').src = qrCheckpointUrl;
 
-    // Update link untuk tombol
-    document.getElementById('modalDownloadLoginBtn').href = `/superadmin/mitra/${id}/print-qr?type=login`;
-    document.getElementById('modalDownloadCheckpointBtn').href = `/superadmin/mitra/${id}/print-qr?type=checkpoint`;
-    document.getElementById('modalDownloadLoginBtn').innerText = "Cetak QR Login";
-    document.getElementById('modalDownloadCheckpointBtn').innerText = "Cetak QR Checkpoint";
+                // Update link untuk tombol
+                document.getElementById('modalDownloadLoginBtn').href = `/superadmin/mitra/${id}/print-qr?type=login`;
+                document.getElementById('modalDownloadCheckpointBtn').href = `/superadmin/mitra/${id}/print-qr?type=checkpoint`;
+                document.getElementById('modalDownloadLoginBtn').innerText = "Cetak QR Login";
+                document.getElementById('modalDownloadCheckpointBtn').innerText = "Cetak QR Checkpoint";
 
-    // Update link untuk gambar
-    document.getElementById('modalImageLinkLogin').href = `/superadmin/mitra/${id}/print-qr?type=login`;
-    document.getElementById('modalImageLinkCheckpoint').href = `/superadmin/mitra/${id}/print-qr?type=checkpoint`;
+                // Update link untuk gambar
+                document.getElementById('modalImageLinkLogin').href = `/superadmin/mitra/${id}/print-qr?type=login`;
+                document.getElementById('modalImageLinkCheckpoint').href = `/superadmin/mitra/${id}/print-qr?type=checkpoint`;
 
-    document.getElementById('qrModal').classList.remove('hidden');
-}
+                document.getElementById('qrModal').classList.remove('hidden');
+            }
+
             function closeQR() {
                 document.getElementById('qrModal').classList.add('hidden');
                 document.getElementById('modalQrImageLogin').src = '';
