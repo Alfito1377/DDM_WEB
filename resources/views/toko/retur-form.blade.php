@@ -3,6 +3,8 @@
 @section('content')
 <script src="https://unpkg.com/html5-qrcode"></script>
 
+
+
 <div class="max-w-2xl mx-auto bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
@@ -90,6 +92,7 @@
 </style>
 
 <script>
+    
     // --- LOGIKA SCANNER BARCODE 1D ---
     let barcodeScanner;
     let isBarcodeScanning = false;

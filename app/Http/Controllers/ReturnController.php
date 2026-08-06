@@ -599,4 +599,28 @@ class ReturnController extends Controller
             ]
         ]);
     }
+    public function updateLokasiOtomatis(\Illuminate\Http\Request $request)
+{
+    $request->validate([
+        'latitude' => 'required',
+        'longitude' => 'required',
+    ]);
+
+    // MENGGUNAKAN store_id SESUAI TABEL USERS ANDA
+    $toko = \App\Models\StoresModel::find(\Illuminate\Support\Facades\Auth::user()->store_id);
+
+    if ($toko) {
+        if (is_null($toko->latitude) || is_null($toko->longitude)) {
+            $toko->update([
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude
+            ]);
+            return response()->json(['success' => true]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
+
+    return response()->json(['success' => false, 'message' => 'Toko tidak ditemukan.'], 404);
+}
 }

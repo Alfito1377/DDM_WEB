@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <title>PT.Sage Maslahat</title>
+    <script>
+        window.AppConfig = {
+            storageUrl: "{{ asset('storage') }}"
+        };
+    </script>
 </head>
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <body class="bg-gray-50 flex h-screen overflow-hidden">
