@@ -2,6 +2,40 @@
 
 @section('content')
 <div class="space-y-6">
+    @php
+    $toko = null;
+    // Cek apakah user yang login punya store_id (seperti di database Anda)
+    if (Auth::user()->store_id) {
+        $toko = \App\Models\StoresModel::find(Auth::user()->store_id);
+    }
+@endphp
+
+<!-- Pengecekan: Muncul HANYA jika data toko ditemukan DAN latitude-nya masih kosong (null) -->
+@if($toko && is_null($toko->latitude))
+<div id="modalSetLokasiToko" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden p-6 text-center border-t-8 border-yellow-500">
+        
+        <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </div>
+        
+        <h3 class="font-black text-gray-800 text-xl mb-2">Atur Titik Lokasi Toko</h3>
+        <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+            Sistem mendeteksi titik koordinat toko Anda belum diatur. Titik ini akan digunakan oleh kurir sebagai lokasi <b>Checkpoint</b>. <br><br>
+            <span class="text-red-600 font-bold">PERINGATAN:</span> Apakah Anda sedang berada di dalam bangunan fisik toko saat ini?
+        </p>
+
+        <div class="flex flex-col gap-3">
+            <button id="btnSetLokasi" onclick="getLocation()" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition shadow-md">
+                Ya, Kunci Lokasi Saat Ini
+            </button>
+            <button onclick="document.getElementById('modalSetLokasiToko').classList.add('hidden')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 rounded-xl transition">
+                Tidak, Saya Sedang di Luar Toko (Lewati)
+            </button>
+        </div>
+    </div>
+</div>
+@endif
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
@@ -71,4 +105,69 @@
         </div>
     </div>
 </div>
+<script>
+// --- LOGIKA UPDATE TITIK KOORDINAT TOKO ---
+    function getLocation() {
+        let btn = document.getElementById('btnSetLokasi');
+        let originalText = btn.innerHTML;
+        btn.innerHTML = "Mengecek Akurasi GPS...";
+        btn.disabled = true;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    // Deteksi Akurasi Anti-Curang
+                    let akurasi = position.coords.accuracy;
+                    if (akurasi > 200) {////nanti kalau sudah dideploy ubah menjadi 100
+                        alert("Gagal! Akurasi GPS terlalu lemah (" + Math.round(akurasi) + " meter). Matikan Fake GPS atau cari sinyal yang lebih baik.");
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    // Kirim ke server
+                    try {
+                        let response = await fetch("{{ route('toko.update.lokasi') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            })
+                        });
+                        
+                        let result = await response.json();
+                        
+                        if(result.success) {
+                            alert("Berhasil! Titik lokasi toko Anda sudah dikunci.");
+                            window.location.reload(); // Reload agar banner otomatis hilang
+                        } else {
+                            alert("Gagal menyimpan lokasi.");
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        }
+                    } catch(e) {
+                        alert("Terjadi kesalahan jaringan.");
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                },
+                function(error) {
+                    alert("Akses Lokasi Ditolak. Harap izinkan akses lokasi (GPS) pada browser Anda agar bisa menggunakan fitur ini.");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } else {
+            alert("Browser HP/Laptop Anda tidak mendukung fitur lokasi (GPS).");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+    </script>
 @endsection
