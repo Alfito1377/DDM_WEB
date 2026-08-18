@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+
 
 class AdminController extends Controller
 {
@@ -38,7 +40,7 @@ class AdminController extends Controller
      */
     function formatDate($date)
     {
-        if($date == null) {
+        if ($date == null) {
             return "-";
         }
         $date = explode(" ", $date);
@@ -52,36 +54,36 @@ class AdminController extends Controller
      */
     function formatStatus($status)
     {
-        if($status == null) {
+        if ($status == null) {
             return "-";
         }
 
-        if($status == 'pending') {
+        if ($status == 'pending') {
             return [
                 'label' => 'Pending',
                 'color' => 'bg-yellow-100 text-yellow-800'
             ];
-        } else if($status == 'packed') {
+        } else if ($status == 'packed') {
             return [
                 'label' => 'Packed',
                 'color' => 'bg-blue-100 text-blue-800'
             ];
-        } else if($status == 'out_of_transit') {
+        } else if ($status == 'out_of_transit') {
             return [
                 'label' => 'Out of Transit',
                 'color' => 'bg-purple-100 text-purple-800'
             ];
-        } else if($status == 'in_transit') {
+        } else if ($status == 'in_transit') {
             return [
                 'label' => 'In Transit',
                 'color' => 'bg-yellow-100 text-yellow-800'
             ];
-        } else if($status == 'completed') {
+        } else if ($status == 'completed') {
             return [
                 'label' => 'Completed',
                 'color' => 'bg-green-100 text-green-800'
             ];
-        } else if($status == 'cancelled') {
+        } else if ($status == 'cancelled') {
             return [
                 'label' => 'Cancelled',
                 'color' => 'bg-red-100 text-red-800'
@@ -94,17 +96,40 @@ class AdminController extends Controller
     /**
      * 1. Menampilkan Halaman Daftar Mitra
      */
-    public function daftarCustomer()
+    public function daftarCustomer(Request $request)
     {
-        $stores = StoresModel::all();
-        $jenisMitraList = JenisMitraModel::all();
+        // 1. Tangkap kata kunci pencarian dari URL
+        $search = $request->input('search');
 
-        foreach ($stores as $store) {
-            $store->jenis_mitra = JenisMitraModel::find($store->jenis_mitra_id)->nama_jenis_mitra;
+        // 2. Buat query pencarian dan pagination
+        $query = StoresModel::query();
+
+        if ($search) {
+            $query->where('store_name', 'like', "%{$search}%")
+                ->orWhere('owner_name', 'like', "%{$search}%")
+                ->orWhere('address', 'like', "%{$search}%");
         }
 
-        // 3. Kirim keduanya ke view daftar-customer
-        return view('admin.daftar_customer.index', compact('stores', 'jenisMitraList'));
+        // Ambil data dengan pagination (contoh: 10 data per halaman)
+        // withQueryString() agar parameter ?search=... tidak hilang saat pindah halaman
+        $stores = $query->latest()->paginate(10)->withQueryString();
+
+        // 3. Ambil semua jenis mitra untuk dropdown di modal
+        $jenisMitraList = JenisMitraModel::all();
+
+        // 4. Optimasi penamaan jenis_mitra (Menghindari N+1 Query / Query berulang)
+        // Kita ubah list jenis mitra menjadi array dengan key 'id' agar pencarian lebih cepat
+        $jenisMitraMap = $jenisMitraList->keyBy('id');
+
+        foreach ($stores as $store) {
+            // Cek apakah ID jenis mitra ada di mapping, jika ada ambil namanya, jika tidak tampilkan '-'
+            $store->jenis_mitra = isset($jenisMitraMap[$store->jenis_mitra_id])
+                ? $jenisMitraMap[$store->jenis_mitra_id]->nama_jenis_mitra
+                : '-';
+        }
+
+        // 5. Kirim data ke view
+        return view('admin.daftar_customer.index', compact('stores', 'jenisMitraList', 'search'));
     }
 
     /**
@@ -164,57 +189,60 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * 3. Menampilkan Halaman Master Data Pengiriman
-     */
-    /**
-     * 3. Menampilkan Halaman Master Data Pengiriman
-     */
+
     public function daftarPengiriman(Request $request)
-    {
-        // Mulai query dari model
-        $query = LogisticModel::latest();
+{
+    $query = LogisticModel::latest();
 
-        // Jika ada request filter status dan nilainya tidak kosong
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Ubah get() menjadi paginate(), misalnya 10 data per halaman
-        $logistics = $query->paginate(20);
-
-        // Pertahankan logika loop bawaan kamu (Laravel paginator mendukung foreach langsung)
-        foreach ($logistics as $logistic) {
-            $logistic->departedAt = $this->formatDate($logistic->departedAt);
-            $logistic->status = $this->formatStatus($logistic->status);
-            
-            if ($logistic->id_mitra) {
-                $mitra = StoresModel::find($logistic->id_mitra);
-                $logistic->mitra = $mitra;
-            } else {
-                $logistic->mitra = null;
-            }
-            if($logistic->driverId) {
-                $driver = DriversModel::where('id_driver', $logistic->driverId)->first();
-                $logistic->driver = $driver;
-            } else {
-                $logistic->driver = null;
-            }
-            if($logistic->vehicleId) {
-                $vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
-                $logistic->vehicle = $vehicle;
-            } else {
-                $logistic->vehicle = null;
-            }
-        }
-
-        // Return ke view (otomatis membawa query string paginate jika ada)
-        return view('admin.pengiriman.index', compact('logistics'));
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
     }
 
-    /**
-     * 4. Memproses Form Tambah Produk Baru
-     */
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $matchedDriverIds = DriversModel::where('name', 'like', "%{$search}%")
+            ->pluck('id_driver');
+
+        $matchedVehicleIds = VehicleModel::where('plateNo', 'like', "%{$search}%")
+            ->orWhere('vehicleType', 'like', "%{$search}%")
+            ->pluck('id_vehicle');
+
+        $query->where(function ($q) use ($search, $matchedDriverIds, $matchedVehicleIds) {
+            $q->where('destination', 'like', "%{$search}%")
+              ->orWhereIn('driverId', $matchedDriverIds)
+              ->orWhereIn('vehicleId', $matchedVehicleIds);
+        });
+    }
+
+    $logistics = $query->paginate(20);
+
+    foreach ($logistics as $logistic) {
+        $logistic->departedAt = $this->formatDate($logistic->departedAt);
+        $logistic->status = $this->formatStatus($logistic->status);
+
+        if ($logistic->id_mitra) {
+            $logistic->mitra = StoresModel::find($logistic->id_mitra);
+        } else {
+            $logistic->mitra = null;
+        }
+
+        if ($logistic->driverId) {
+            $logistic->driver = DriversModel::where('id_driver', $logistic->driverId)->first();
+        } else {
+            $logistic->driver = null;
+        }
+
+        if ($logistic->vehicleId) {
+            $logistic->vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
+        } else {
+            $logistic->vehicle = null;
+        }
+    }
+
+    // 6. Return data ke view
+    return view('admin.pengiriman.index', compact('logistics'));
+}
+
     public function storePengiriman(Request $request)
     {
         // Validasi input produk
@@ -230,7 +258,7 @@ class AdminController extends Controller
                 'product_code' => $productCode,
                 'product_name' => $request->product_name,
                 'barcode' => $request->barcode,
-                'base_stock' => 0, 
+                'base_stock' => 0,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -275,7 +303,7 @@ class AdminController extends Controller
     public function updateCustomer(Request $request, $id)
     {
         $store = StoresModel::find($id);
-        
+
         $request->validate([
             'store_name' => 'required|string|max:255',
             'owner_name' => 'required|string|max:255',
@@ -345,13 +373,13 @@ class AdminController extends Controller
         } else {
             $logistics->mitra = null;
         }
-        if($logistics->driverId) {
+        if ($logistics->driverId) {
             $driver = DriversModel::where('id_driver', $logistics->driverId)->first();
             $logistics->driver = $driver;
         } else {
             $logistics->driver = null;
         }
-        if($logistics->vehicleId) {
+        if ($logistics->vehicleId) {
             $vehicle = VehicleModel::where('id_vehicle', $logistics->vehicleId)->first();
             $logistics->vehicle = $vehicle;
         } else {
@@ -367,25 +395,73 @@ class AdminController extends Controller
      */
     public function printQr($id, Request $request)
     {
-        $toko = StoresModel::find($id);
+        $toko = \App\Models\StoresModel::find($id);
 
         if (!$toko) {
             abort(404, 'Data Mitra tidak ditemukan');
         }
-        
+
         $type = $request->query('type', 'login');
-        
+
         if ($type === 'checkpoint') {
             $url = urlencode(url('/login/qr/checkpoint?token=' . $toko->qr_token_checkpoint));
-            $title = "QR Code Checkpoint";
+            $title = "QR CHECKPOINT KURIR";
+            $theme = "amber";
         } else {
             $url = urlencode(url('/login/qr?token=' . $toko->qr_token_login));
-            $title = "QR Code Login";
+            $title = "QR AKSES LOGIN TOKO";
+            $theme = "green";
         }
-        
-        $qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . $url;
 
-        return view('admin.daftar_customer.print-qr', compact('toko', 'qrImage', 'title'));
+        // Gunakan kode warna Hitam (000000)
+        $qrColor = "000000";
+        $qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=" . $qrColor . "&data=" . $url;
+        return view('admin.daftar_customer.print-qr', compact('toko', 'qrImage', 'title', 'type', 'theme'));
+    }
+    public function ajukanReset(Request $request)
+    {
+        $toko = \App\Models\StoresModel::find(Auth::user()->store_id);
+
+        if ($toko) {
+            // CEK ATURAN COOLDOWN 30 HARI
+            if ($toko->last_location_set_at) {
+                $batasHari = 30; // Anda bisa mengubah angka ini sesuai kebutuhan
+                $tanggalBisaReset = \Carbon\Carbon::parse($toko->last_location_set_at)->addDays($batasHari);
+
+                if (now()->lessThan($tanggalBisaReset)) {
+                    $sisaHari = now()->diffInDays($tanggalBisaReset) ?: 1; // Jika < 1 hari, tampilkan 1
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Titik lokasi baru saja diatur. Anda harus menunggu {$sisaHari} hari lagi untuk bisa mengajukan reset lokasi."
+                    ]);
+                }
+            }
+
+            $toko->request_reset_lokasi = true;
+            $toko->save();
+            return response()->json(['success' => true, 'message' => 'Pengajuan reset berhasil dikirim ke Admin.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Toko tidak ditemukan.']);
+    }
+    public function daftarResetLokasi()
+    {
+        // Ambil toko yang sedang mengajukan reset
+        $stores = \App\Models\StoresModel::where('request_reset_lokasi', true)->get();
+        return view('admin.reset_lokasi.index', compact('stores'));
+    }
+
+    public function setujuiReset($id)
+    {
+        $toko = \App\Models\StoresModel::findOrFail($id);
+
+        // Kosongkan lokasi dan matikan status request
+        $toko->latitude = null;
+        $toko->longitude = null;
+        $toko->request_reset_lokasi = false;
+        $toko->save();
+
+        return back()->with('success', 'Reset lokasi disetujui. Toko sekarang harus mengatur ulang lokasinya.');
     }
     
 }

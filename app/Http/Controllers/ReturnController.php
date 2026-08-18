@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Services\SageApiService;
+use App\Models\StoresModel;
+
 
 class ReturnController extends Controller
 {
@@ -292,26 +294,44 @@ class ReturnController extends Controller
     /**
      * Menampilkan daftar retur untuk Manajer
      */
-    public function indexManager()
-    {
-        $returns = DB::table('returns')
-            ->join('stores', 'returns.store_id', '=', 'stores.id')
-            ->join('return_details', 'returns.id', '=', 'return_details.return_id')
-            ->select(
-                'returns.*',
-                'stores.store_name',
-                'return_details.barcode',
-                'return_details.quantity'
-            )
-            ->orderBy('returns.created_at', 'desc')
-            ->get();
+    public function indexManager(Request $request)
+{
+    $query = DB::table('returns')
+        ->join('stores', 'returns.store_id', '=', 'stores.id')
+        ->join('return_details', 'returns.id', '=', 'return_details.return_id')
+        ->select(
+            'returns.*',
+            'stores.store_name',
+            'return_details.barcode',
+            'return_details.quantity'
+        );
 
-        return view('manajer.retur-approval', compact('returns'));
+    if ($request->filled('status')) {
+        $query->where('returns.status', $request->status);
     }
 
-    /**
-     * Tampilkan Halaman Riwayat + Mini Dashboard Statistik untuk Toko
-     */
+    if ($request->filled('search')) {
+        $search = $request->search;
+        
+        $query->where(function($q) use ($search) {
+            $q->where('stores.store_name', 'like', "%{$search}%")
+              ->orWhere('return_details.barcode', 'like', "%{$search}%")
+              ->orWhere('returns.reason', 'like', "%{$search}%")
+              // Jika mencari ID / Kode Retur
+              ->orWhere('returns.id', 'like', "%{$search}%"); 
+        });
+    }
+
+    $query->orderBy('returns.created_at', 'desc');
+
+
+    $returns = $query->paginate(15);
+
+    
+    $pendingCount = DB::table('returns')->where('status', 'Pending')->count();
+
+    return view('manajer.retur-approval', compact('returns', 'pendingCount'));
+}
     public function indexToko()
     {
         $storeId = Auth::user()->store_id;
@@ -599,28 +619,29 @@ class ReturnController extends Controller
             ]
         ]);
     }
-    public function updateLokasiOtomatis(\Illuminate\Http\Request $request)
-{
-    $request->validate([
-        'latitude' => 'required',
-        'longitude' => 'required',
-    ]);
+    public function updateLokasiOtomatis(Request $request)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
 
-    // MENGGUNAKAN store_id SESUAI TABEL USERS ANDA
-    $toko = \App\Models\StoresModel::find(\Illuminate\Support\Facades\Auth::user()->store_id);
+        // Cari data toko milik user yang sedang login
+        $toko = StoresModel::find(Auth::user()->store_id);
 
-    if ($toko) {
-        if (is_null($toko->latitude) || is_null($toko->longitude)) {
-            $toko->update([
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude
-            ]);
-            return response()->json(['success' => true]);
+        if ($toko) {
+            // Simpan koordinat baru
+            $toko->latitude = $request->latitude;
+            $toko->longitude = $request->longitude;
+            
+            // Catat waktu kapan lokasi ini dikunci (untuk keperluan Cooldown 30 hari)
+            $toko->last_location_set_at = now(); 
+            
+            $toko->save();
+
+            return response()->json(['success' => true, 'message' => 'Lokasi berhasil disimpan.']);
         }
-        
-        return response()->json(['success' => true]);
-    }
 
-    return response()->json(['success' => false, 'message' => 'Toko tidak ditemukan.'], 404);
-}
+        return response()->json(['success' => false, 'message' => 'Toko tidak ditemukan.']);
+    }
 }

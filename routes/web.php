@@ -75,10 +75,11 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
         Route::get('/mitra/{id}/print-qr', [AdminController::class, 'printQr'])->name('admin.print-qr');
 
-        // Graceful fallback for old dashboard routes
         Route::get('/dashboard', function () {
             return redirect('/superadmin/dashboard-logistik');
         })->name('superadmin.dashboard');
+        Route::get('/permintaan-reset-lokasi', [AdminController::class, 'daftarResetLokasi']);
+        Route::post('/setujui-reset-lokasi/{id}', [AdminController::class, 'setujuiReset']);
     });
 
     // RUTE PREFIX ADMIN
@@ -106,14 +107,17 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::get('/dashboard', function () {
             return redirect('/admin/dashboard-analitik');
         })->name('admin.dashboard');
+        Route::get('/permintaan-reset-lokasi', [AdminController::class, 'daftarResetLokasi']);
+        Route::post('/setujui-reset-lokasi/{id}', [AdminController::class, 'setujuiReset']);
     });
 });
 
 // 5. AKSES KHUSUS TOKO
 Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::get('/', function () {
-        return redirect('/toko/penerimaan');
+        return redirect('/toko/retur');
     });
+    Route::get('/', [ReturnController::class, 'indexToko']);
     Route::get('/riwayat', [ReturnController::class, 'indexToko']);
 
     // Rute Penerimaan Barang
@@ -125,8 +129,8 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::get('/retur/{id}/cetak', [ReturnController::class, 'printSuratJalan']);
     Route::delete('/retur/{id}/batal', [ReturnController::class, 'cancel']);
     Route::get('/panduan', [KnowledgeBaseController::class, 'panduanToko']);
-    Route::get('/profil', [ReturnController::class, 'profilToko']);
     Route::post('/update-lokasi-otomatis', [ReturnController::class, 'updateLokasiOtomatis'])->name('toko.update.lokasi');
+    Route::post('/toko/ajukan-reset-lokasi', [App\Http\Controllers\AdminController::class, 'ajukanReset'])->name('toko.ajukan.reset');
 });
 
 // 6. AKSES KHUSUS PEKERJA LAPANG
