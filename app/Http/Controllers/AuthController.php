@@ -88,7 +88,7 @@ class AuthController extends Controller
         $jarakMeter = $radiusBumi * $c;
 
         // Batas toleransi jarak (100 meter)
-        $batasToleransi = 100; 
+        $batasToleransi = 150; 
         
         if ($jarakMeter > $batasToleransi) {
             return response()->json([
@@ -134,6 +134,7 @@ class AuthController extends Controller
             'message' => 'Kedatangan Anda telah dicatat di sistem (Jarak: ' . round($jarakMeter) . 'm).',
             'updated_count' => $updated
         ]);
+    
     }
     /**
      * Memproses data dari form login
