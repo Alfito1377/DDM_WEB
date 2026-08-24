@@ -10,13 +10,11 @@ class ChatController extends Controller
 {
     public function sendMessage(Request $request)
     {
-        // 1. Validasi input dari user
         $request->validate([
             'pertanyaan' => 'required|string'
         ]);
 
         try {
-            // 2. Tembak data ke AI Service (Python FastAPI)
             $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8000') . '/chat';
             
             $response = Http::timeout(180)->post($aiServiceUrl, [

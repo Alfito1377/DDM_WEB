@@ -133,27 +133,7 @@
                     </span>
 
                 </a>
-                <!-- Permintaan Reset Lokasi -->
-                <a href="{{ url($prefix . '/permintaan-reset-lokasi') }}" onclick="closeSidebarOnMobile()"
-                    class="flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
-
-                    <svg class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-green-600 transition-colors"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
-                        </path>
-
-                    </svg>
-
-                    <span class="truncate">
-                        Permintaan Reset GPS
-                    </span>
-
-                </a>
+                
 
 
                 <!-- Kelola Pengiriman -->
@@ -191,6 +171,27 @@
 
                     <span class="truncate">
                         Daftar Retur
+                    </span>
+
+                </a>
+                <!-- Permintaan Reset Lokasi -->
+                <a href="{{ url($prefix . '/permintaan-reset-lokasi') }}" onclick="closeSidebarOnMobile()"
+                    class="flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-green-50 hover:text-green-700 transition-all group">
+
+                    <svg class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-green-600 transition-colors"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
+                        </path>
+
+                    </svg>
+
+                    <span class="truncate">
+                        Permintaan Reset GPS
                     </span>
 
                 </a>
@@ -272,7 +273,7 @@
                     </span>
                 </a>
 
-                @if ($toko && !is_null($toko->latitude))
+@if ($toko && !empty($toko->latitude))
                     <div class="px-3 sm:px-4 mt-4">
                         <div class="h-px bg-gray-100 w-full mb-4"></div>
 
@@ -288,23 +289,29 @@
                                 </span>
                             </div>
                         @else
-                            {{-- Hitung Sisa Hari --}}
+                            {{-- Hitung Sisa Hari (DIPERBAIKI) --}}
                             @php
                                 $bisaReset = true;
                                 $sisaHari = 0;
                                 if ($toko->last_location_set_at) {
                                     $tanggalBisaReset = \Carbon\Carbon::parse($toko->last_location_set_at)->addDays(30);
+                                    
                                     if (now()->lessThan($tanggalBisaReset)) {
                                         $bisaReset = false;
-                                        $sisaHari = now()->diffInDays($tanggalBisaReset) ?: 1;
+                                        // Gunakan ceil() dan floatDiffInDays untuk membulatkan ke atas tanpa koma
+                                        $sisaHari = ceil(now()->floatDiffInDays($tanggalBisaReset));
+                                        
+                                        // Jaga-jaga agar tidak tampil 0 hari
+                                        if ($sisaHari < 1) {
+                                            $sisaHari = 1;
+                                        }
                                     }
                                 }
                             @endphp
 
                             @if($bisaReset)
                                 {{-- State: Tombol Aktif (Bisa Diklik) --}}
-                                <button onclick="ajukanResetLokasi()"
-                                    class="w-full flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all group">
+                                <button onclick="ajukanResetLokasi()" class="w-full flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all group">
                                     <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -315,16 +322,19 @@
                                 </button>
                             @else
                                 {{-- State: Tombol Terkunci (Disabled) --}}
-                                <button disabled
-                                    class="w-full flex items-center justify-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-not-allowed">
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                    </svg>
-                                    <span class="text-[11px] font-bold text-gray-400">
-                                        Terkunci (Sisa {{ $sisaHari }} Hari)
+                                <button disabled class="w-full flex flex-col items-center justify-center p-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-not-allowed">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                        <span class="text-[11px] font-bold text-gray-500">Terkunci</span>
+                                    </div>
+                                    <span class="text-[10px] font-medium text-gray-400">
+                                        (Sisa {{ $sisaHari }} Hari)
                                     </span>
                                 </button>
                             @endif
+
 
                         @endif
                     </div>
@@ -452,4 +462,29 @@
         }
 
     });
+    async function ajukanResetLokasi() {
+        if (!confirm('Apakah Anda yakin ingin mengajukan perubahan titik lokasi toko? Proses ini butuh persetujuan Admin.')) return;
+
+        try {
+            let response = await fetch("{{ route('toko.ajukan.reset') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            let result = await response.json();
+
+            if (result.success) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                alert('Gagal mengajukan reset: ' + result.message);
+            }
+        } catch (e) {
+            alert('Terjadi kesalahan jaringan saat mengajukan reset.');
+        }
+    }
 </script>

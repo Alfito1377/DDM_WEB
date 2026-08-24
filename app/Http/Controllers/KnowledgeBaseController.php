@@ -58,7 +58,7 @@ class KnowledgeBaseController extends Controller
                 // Kirim lokasi file absolut ke FastAPI (Port 8001)
                 $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8001') . '/webhook/document';
 
-                $response = Http::timeout(10)->post($aiServiceUrl, [
+                $response = Http::timeout(120)->post($aiServiceUrl, [
                     'file_path' => $absolutePath
                 ]);
 

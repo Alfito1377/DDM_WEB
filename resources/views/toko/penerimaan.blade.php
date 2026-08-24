@@ -14,7 +14,7 @@
         {{-- =========================================================
         MODAL SET LOKASI TOKO
     ========================================================== --}}
-        @if ($toko && is_null($toko->latitude))
+@if ($toko && empty($toko->latitude))
             <div id="modalSetLokasiToko"
                 class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-3 sm:p-4">
 

@@ -328,9 +328,22 @@ class ReturnController extends Controller
     $returns = $query->paginate(15);
 
     
-    $pendingCount = DB::table('returns')->where('status', 'Pending')->count();
+    $pendingCount = DB::table('returns')
+        ->where('status', 'Pending')
+        ->count();
 
-    return view('manajer.retur-approval', compact('returns', 'pendingCount'));
+    // Disetujui
+    $approvedCount = DB::table('returns')
+        ->where('status', 'Approved')
+        ->count();
+
+    // Ditolak
+    $rejectedCount = DB::table('returns')
+        ->where('status', 'Rejected')
+        ->count();
+
+
+    return view('manajer.retur-approval', compact('returns', 'pendingCount', 'approvedCount', 'rejectedCount'));
 }
     public function indexToko()
     {
