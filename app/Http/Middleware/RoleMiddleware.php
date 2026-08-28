@@ -13,6 +13,9 @@ class RoleMiddleware
     {
         // Pastikan user sudah login
         if (!Auth::check()) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Sesi Anda telah berakhir. Silakan login kembali.'], 401);
+            }
             return redirect('/');
         }
 

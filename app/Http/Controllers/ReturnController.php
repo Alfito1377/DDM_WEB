@@ -42,7 +42,8 @@ class ReturnController extends Controller
      */
     public function createLapangan()
     {
-        return view('toko.retur-form');
+        $stores = \App\Models\StoresModel::all();
+        return view('toko.retur-form', compact('stores'));
     }
     /**
      * TAHAP A: Toko Mengajukan Retur (Mendukung Banyak Foto)
