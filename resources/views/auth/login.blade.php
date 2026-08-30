@@ -839,15 +839,18 @@
                     onError
                 )
                 .then(onCameraStarted)
-                .catch(() => {
+                .catch((err1) => {
 
                     console.warn(
-                        "Environment camera gagal. Mencari kamera..."
+                        "Environment camera gagal. Mencari kamera...", err1
                     );
+                    alert("DEBUG LOGIN - Environment camera gagal: " + err1);
 
                     Html5Qrcode
                         .getCameras()
                         .then(devices => {
+                            
+                            alert("DEBUG LOGIN - Kamera ditemukan: " + JSON.stringify(devices));
 
                             if (!devices || devices.length === 0) {
 
@@ -871,6 +874,8 @@
                                 camera =
                                     devices[devices.length - 1];
                             }
+                            
+                            alert("DEBUG LOGIN - Menggunakan kamera ID: " + camera.id + ", Label: " + camera.label);
 
                             html5QrCode
                                 .start(
@@ -880,10 +885,16 @@
                                     onError
                                 )
                                 .then(onCameraStarted)
-                                .catch(onCameraFailed);
+                                .catch((err2) => {
+                                    alert("DEBUG LOGIN - Gagal start kamera fallback: " + err2);
+                                    onCameraFailed(err2);
+                                });
 
                         })
-                        .catch(onCameraFailed);
+                        .catch((err3) => {
+                            alert("DEBUG LOGIN - getCameras error: " + err3);
+                            onCameraFailed(err3);
+                        });
                 });
         }
 

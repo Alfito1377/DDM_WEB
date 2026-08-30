@@ -148,8 +148,42 @@
         ).then(() => {
             isBarcodeScanning = true;
         }).catch((err) => {
-            alert("Gagal mengakses kamera. Pastikan izin browser telah diberikan.");
-            closeBarcodeScanner();
+            alert("DEBUG RETUR - Error exact environment: " + err);
+            
+            Html5Qrcode.getCameras().then(devices => {
+                alert("DEBUG RETUR - Kamera ditemukan: " + JSON.stringify(devices));
+                if (devices && devices.length > 0) {
+                    let camera = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+                    alert("DEBUG RETUR - Coba kamera alternatif: " + camera.id + " label: " + camera.label);
+                    
+                    barcodeScanner.start(
+                        camera.id, 
+                        config, 
+                        (decodedText, decodedResult) => {
+                            const inputField = document.getElementById('barcode');
+                            inputField.value = decodedText;
+                            inputField.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                            setTimeout(() => {
+                                inputField.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
+                            }, 1500);
+                            closeBarcodeScanner();
+                        }, 
+                        (errorMessage) => {}
+                    ).then(() => {
+                        isBarcodeScanning = true;
+                    }).catch(err3 => {
+                         alert("DEBUG RETUR - Gagal fallback kamera: " + err3);
+                         closeBarcodeScanner();
+                    });
+                } else {
+                     alert("Gagal mengakses kamera. Tidak ada device kamera yang terdeteksi.");
+                     closeBarcodeScanner();
+                }
+            }).catch(err2 => {
+                 alert("DEBUG RETUR - getCameras error: " + err2);
+                 alert("Gagal mengakses kamera. Pastikan izin browser telah diberikan.");
+                 closeBarcodeScanner();
+            });
         });
     }
 
