@@ -227,6 +227,65 @@ class AuthController extends Controller
     }
 
     /**
+     * Memproses login via API (Mobile App) menggunakan Sanctum
+     */
+    public function apiLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+            'device_id' => 'required|string', // Pastikan device_id dikirim oleh aplikasi
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email atau password salah.'
+            ], 401);
+        }
+
+        // ==========================================
+        // LOGIKA DEVICE BINDING (KUNCI 1 HP 1 AKUN)
+        // ==========================================
+        if (is_null($user->device_id)) {
+            // Jika belum ada device_id yang terikat, daftarkan device ini
+            $user->device_id = $request->device_id;
+            $user->save();
+        } else {
+            // Jika sudah terikat, cocokkan dengan device_id yang dikirim
+            if ($user->device_id !== $request->device_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun ini sudah terikat dengan perangkat lain. Hubungi admin untuk mengganti perangkat.'
+                ], 403);
+            }
+        }
+        // ==========================================
+
+        // Hapus token lama jika diinginkan (opsional)
+        // $user->tokens()->delete();
+
+        // Buat token baru
+        $token = $user->createToken('mobile-app-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login berhasil',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role->role_name ?? ''
+                ]
+            ]
+        ]);
+    }
+
+    /**
      * Memproses logout pengguna
      */
     public function logout(Request $request)
