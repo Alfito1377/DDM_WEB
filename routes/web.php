@@ -74,7 +74,10 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
         Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
         Route::get('/mitra/{id}/print-qr', [AdminController::class, 'printQr'])->name('admin.print-qr');
-
+        Route::get('/daftar-petugas-lapang', [AdminController::class, 'daftarPetugasLapang']);
+        Route::post('/daftar-petugas-lapang/store', [AdminController::class, 'storePetugasLapang']);
+        Route::put('/daftar-petugas-lapang/{id}', [AdminController::class, 'updatePetugasLapang']);
+        Route::delete('/daftar-petugas-lapang/{id}', [AdminController::class, 'destroyPetugasLapang']);
         Route::get('/dashboard', function () {
             return redirect('/superadmin/dashboard-logistik');
         })->name('superadmin.dashboard');
@@ -102,8 +105,8 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('admin.chat.send');
         Route::get('/unggah-data', [KnowledgeBaseController::class, 'index']);
         Route::post('/unggah-data', [KnowledgeBaseController::class, 'store']);
-
-        // Graceful fallback for old dashboard routes
+        Route::get('/daftar-petugas-lapang', [AdminController::class, 'daftarPetugasLapang']);
+        Route::post('/daftar-petugas-lapang/store', [AdminController::class, 'storePetugasLapang']);
         Route::get('/dashboard', function () {
             return redirect('/admin/dashboard-analitik');
         })->name('admin.dashboard');
