@@ -36,6 +36,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     });
     // Fitur Retur
     Route::prefix('returns')->group(function () {
+        // [GET] Endpoint untuk Pekerja Lapang: Melihat riwayat retur yang diajukan
+        Route::get('/history-lapangan', [ReturnController::class, 'historyLapangan']);
+
         // [POST] Endpoint untuk Toko: Mengirim pengajuan retur baru
         Route::post('/', [ReturnController::class, 'store']);
         
