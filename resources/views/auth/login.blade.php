@@ -1118,9 +1118,9 @@
         // ENTER MANUAL CODE
         // ============================================================
 
-        document
-            .getElementById('manualCodeInput')
-            .addEventListener(
+        const manualInput = document.getElementById('manualCodeInput');
+        if (manualInput) {
+            manualInput.addEventListener(
                 'keydown',
                 function(event) {
 
@@ -1130,6 +1130,7 @@
 
                 }
             );
+        }
 
 
         // ============================================================

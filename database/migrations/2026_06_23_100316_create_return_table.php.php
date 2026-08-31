@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('return_code')->unique(); // Contoh: RT-2026-06-01
             $table->foreignId('store_id')->constrained('stores')->onDelete('cascade');
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             
             // manager_id bersifat nullable karena saat diajukan, belum ada yang approve
             $table->foreignId('manager_id')->nullable()->constrained('users')->onDelete('set null');

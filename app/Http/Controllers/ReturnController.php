@@ -78,6 +78,7 @@ class ReturnController extends Controller
             $returnId = DB::table('returns')->insertGetId([
                 'return_code' => $returnCode,
                 'store_id' => $request->store_id,
+                'created_by' => Auth::id(),
                 'reason' => $request->reason,
                 'notes' => $request->notes,
                 'proof_image' => json_encode($imagePaths),
@@ -128,6 +129,42 @@ class ReturnController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan retur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Mengambil riwayat retur untuk Pekerja Lapang (Mobile App)
+     */
+    public function historyLapangan()
+    {
+        try {
+            $returns = DB::table('returns')
+                ->join('stores', 'returns.store_id', '=', 'stores.id')
+                ->join('return_details', 'returns.id', '=', 'return_details.return_id')
+                ->where('returns.created_by', Auth::id())
+                ->select(
+                    'returns.id',
+                    'returns.return_code',
+                    'returns.status',
+                    'returns.reason',
+                    'returns.notes',
+                    'returns.created_at',
+                    'stores.store_name',
+                    'return_details.barcode',
+                    'return_details.quantity'
+                )
+                ->orderBy('returns.created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $returns
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data riwayat retur: ' . $e->getMessage()
             ], 500);
         }
     }
