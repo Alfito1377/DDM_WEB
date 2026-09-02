@@ -227,24 +227,29 @@ class AuthController extends Controller
     }
 
     /**
-     * Memproses login via API (Mobile App) menggunakan Sanctum
+     * Memproses login via API (Mobile App) menggunakan JWT
      */
     public function apiLogin(Request $request)
     {
-        $request->validate([
+        $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+        ]);
+        
+        $request->validate([
             'device_id' => 'required|string', // Pastikan device_id dikirim oleh aplikasi
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+        // Attempt login dengan JWT
+        if (! $token = Auth::guard('api')->attempt($credentials)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.'
             ], 401);
         }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::guard('api')->user();
 
         // ==========================================
         // LOGIKA DEVICE BINDING (KUNCI 1 HP 1 AKUN)
@@ -263,12 +268,6 @@ class AuthController extends Controller
             }
         }
         // ==========================================
-
-        // Hapus token lama jika diinginkan (opsional)
-        // $user->tokens()->delete();
-
-        // Buat token baru
-        $token = $user->createToken('mobile-app-token')->plainTextToken;
 
         return response()->json([
             'success' => true,

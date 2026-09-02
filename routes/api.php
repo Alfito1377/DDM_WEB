@@ -16,7 +16,7 @@ use App\Http\Controllers\AuthController;
 // Route bawaan dari instalasi API (untuk auth Sanctum)
 Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+})->middleware('auth:api');
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +27,7 @@ Route::get('/user', function (Request $request) {
 // Endpoint Login untuk Mobile App (Tidak butuh auth:sanctum)
 Route::post('/v1/login', [AuthController::class, 'apiLogin']);
 
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware('auth:api')->group(function () {
     
     // Fitur Toko / Mitra (Digunakan pekerja lapang untuk memilih toko di App Mobile)
     Route::get('/stores', function () {
