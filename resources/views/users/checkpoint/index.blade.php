@@ -212,7 +212,58 @@
             setInterval(updateClock, 1000);
             updateClock();
 
-            // Form Submit Handler
+            let cachedPosition = null;
+            let gpsPermissionState = 'unknown';
+
+            function requestGpsEarly() {
+                if (!navigator.geolocation) return;
+
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({
+                        name: 'geolocation'
+                    }).then(function(result) {
+                        gpsPermissionState = result.state;
+
+                        if (result.state === 'granted') {
+                            prefetchPosition();
+                        } else if (result.state === 'prompt') {
+                            prefetchPosition();
+                        }
+
+                        result.onchange = function() {
+                            gpsPermissionState = this.state;
+                            if (this.state === 'granted') {
+                                prefetchPosition();
+                            }
+                        };
+                    }).catch(function() {
+                        prefetchPosition();
+                    });
+                } else {
+                    prefetchPosition();
+                }
+            }
+
+            function prefetchPosition() {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        cachedPosition = position;
+                        gpsPermissionState = 'granted';
+                    },
+                    function(error) {
+                        if (error.code === error.PERMISSION_DENIED) {
+                            gpsPermissionState = 'denied';
+                        }
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 30000
+                    }
+                );
+            }
+
+            requestGpsEarly();
+
             const form = document.getElementById('checkpoint-form');
             const btnSubmit = document.getElementById('submit-button');
             const btnText = document.getElementById('btn-text');
@@ -245,89 +296,119 @@
 
                     if (!nama || !noHp) return;
 
-                    // Loading state diubah teksnya
+                    if (gpsPermissionState === 'denied') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Lokasi GPS Diblokir',
+                            html: 'Akses lokasi telah diblokir oleh browser.<br><br>' +
+                                '<strong>Cara mengaktifkan:</strong><br>' +
+                                '1. Ketuk ikon gembok/info (🔒) di address bar<br>' +
+                                '2. Cari "Lokasi" atau "Location"<br>' +
+                                '3. Ubah ke "Izinkan" / "Allow"<br>' +
+                                '4. Refresh halaman ini',
+                            confirmButtonColor: '#3b82f6',
+                        });
+                        return;
+                    }
+
+                    if (!navigator.geolocation) {
+                        Swal.fire('Tidak Didukung', 'Browser HP Anda tidak mendukung fitur GPS.', 'error');
+                        return;
+                    }
+
                     btnSubmit.disabled = true;
-                    btnText.textContent =
-                    'Mendeteksi Lokasi GPS...'; // Beri tahu kurir bahwa GPS sedang dibaca
+                    btnText.textContent = 'Mendeteksi Lokasi GPS...';
                     btnIcon.classList.add('hidden');
                     btnSpinner.classList.remove('hidden');
 
-                    // --- MULAI PENGECEKAN GPS SEBELUM KIRIM FORM ---
-                    if (navigator.geolocation) {
+                    function submitWithPosition(position) {
+                        let akurasi = position.coords.accuracy;
+
+                        if (akurasi > 1000) {
+                            Swal.fire('Gagal!', 'Akurasi GPS terlalu lemah (' + Math.round(akurasi) +
+                                ' meter). Matikan Fake GPS atau cari sinyal yang lebih baik di luar ruangan.',
+                                'error');
+                            resetButton();
+                            return;
+                        }
+
+                        btnText.textContent = 'Menyimpan Data...';
+
+                        const formData = new FormData();
+                        formData.append('nama_pengirim', nama);
+                        formData.append('nomor_handphone', noHp);
+                        formData.append('catatan', catatan);
+                        formData.append('token', token);
+                        formData.append('_token', csrf);
+                        formData.append('selected_shipments', JSON.stringify(selectedIds));
+                        formData.append('kurir_lat', position.coords.latitude);
+                        formData.append('kurir_lng', position.coords.longitude);
+
+                        fetch("{{ route('login.qr.checkpoint.post') }}", {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success' || data.success === true) {
+                                    Swal.fire('Berhasil!', data.message, 'success').then(() => {
+                                        window.location.reload();
+                                    });
+                                } else {
+                                    throw new Error(data.message || 'Terjadi kesalahan sistem.');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Oops...', error.message, 'error');
+                            })
+                            .finally(() => {
+                                resetButton();
+                            });
+                    }
+
+                    if (cachedPosition && (Date.now() - cachedPosition.timestamp) < 30000) {
+                        submitWithPosition(cachedPosition);
+                    } else {
                         navigator.geolocation.getCurrentPosition(
                             function(position) {
-                                // 1. LAPIS KEAMANAN ANTI FAKE-GPS (Cek akurasi browser)
-                                let akurasi = position.coords.accuracy;
-
-                                // (Batas 1000 meter untuk testing di komputer, ubah ke 100/150 saat rilis)
-                                if (akurasi > 1000) {
-                                    Swal.fire('Gagal!', 'Akurasi GPS terlalu lemah (' + Math.round(
-                                            akurasi) +
-                                        ' meter). Matikan Fake GPS atau cari sinyal yang lebih baik di luar ruangan.',
-                                        'error');
-                                    resetButton();
-                                    return;
-                                }
-
-                                btnText.textContent = 'Menyimpan Data...';
-
-                                // 2. SUSUN DATA FORM + KOORDINAT KURIR
-                                const formData = new FormData();
-                                formData.append('nama_pengirim', nama);
-                                formData.append('nomor_handphone', noHp);
-                                formData.append('catatan', catatan);
-                                formData.append('token', token);
-                                formData.append('_token', csrf);
-                                formData.append('selected_shipments', JSON.stringify(selectedIds));
-
-                                // Tambahkan Titik GPS Kurir ke Payload Data
-                                formData.append('kurir_lat', position.coords.latitude);
-                                formData.append('kurir_lng', position.coords.longitude);
-
-                                // 3. KIRIM KE SERVER (AuthController)
-                                fetch("{{ route('login.qr.checkpoint.post') }}", {
-                                        method: 'POST',
-                                        headers: {
-                                            'Accept': 'application/json'
-                                        },
-                                        body: formData
-                                    })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data.status === 'success' || data.success === true) {
-                                            Swal.fire('Berhasil!', data.message, 'success').then(
-                                            () => {
-                                                    window.location.reload();
-                                                });
-                                        } else {
-                                            throw new Error(data.message ||
-                                                'Terjadi kesalahan sistem.');
-                                        }
-                                    })
-                                    .catch(error => {
-                                        Swal.fire('Oops...', error.message, 'error');
-                                    })
-                                    .finally(() => {
-                                        resetButton();
-                                    });
+                                cachedPosition = position;
+                                submitWithPosition(position);
                             },
                             function(error) {
-                                Swal.fire('Akses Ditolak',
-                                    'Harap izinkan akses lokasi (GPS) pada browser HP Anda agar bisa menyelesaikan Checkpoint.',
-                                    'warning');
+                                if (error.code === error.PERMISSION_DENIED) {
+                                    gpsPermissionState = 'denied';
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Lokasi GPS Diblokir',
+                                        html: 'Akses lokasi telah diblokir oleh browser.<br><br>' +
+                                            '<strong>Cara mengaktifkan:</strong><br>' +
+                                            '1. Ketuk ikon gembok/info (🔒) di address bar<br>' +
+                                            '2. Cari "Lokasi" atau "Location"<br>' +
+                                            '3. Ubah ke "Izinkan" / "Allow"<br>' +
+                                            '4. Refresh halaman ini',
+                                        confirmButtonColor: '#3b82f6',
+                                    });
+                                } else if (error.code === error.TIMEOUT) {
+                                    Swal.fire('GPS Timeout',
+                                        'Tidak dapat mendeteksi lokasi. Pastikan GPS aktif dan coba di area terbuka.',
+                                        'warning');
+                                } else {
+                                    Swal.fire('Gagal GPS',
+                                        'Tidak dapat mendeteksi lokasi. Pastikan GPS/Location di HP Anda aktif.',
+                                        'warning');
+                                }
                                 resetButton();
                             }, {
                                 enableHighAccuracy: true,
-                                timeout: 10000,
-                                maximumAge: 0
+                                timeout: 20000,
+                                maximumAge: 30000
                             }
                         );
-                    } else {
-                        Swal.fire('Tidak Didukung', 'Browser HP Anda tidak mendukung fitur GPS.', 'error');
-                        resetButton();
                     }
 
-                    // Fungsi kecil untuk mengembalikan tombol ke semula jika terjadi error
                     function resetButton() {
                         btnSubmit.disabled = false;
                         btnText.textContent = 'Konfirmasi Kedatangan';
