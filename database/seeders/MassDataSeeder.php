@@ -487,7 +487,7 @@ class MassDataSeeder extends Seeder
                 $deliveryBatch[] = [
                     'doc_no' => $docNo,
                     'doc_date' => $date->toDateString(),
-                    'customer_name' => 'Mitra Toko ' . Str::random(3),
+                    'store_id' => $this->storeIds[array_rand($this->storeIds)],
                     'order_no' => 'ORD-' . strtoupper(Str::random(5)),
                     'remark' => 'Pengiriman barang ke mitra',
                     'posted_at' => $date->toDateString(),
