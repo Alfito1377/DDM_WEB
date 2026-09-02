@@ -227,7 +227,7 @@ class DashboardController extends Controller
     {
         try {
             $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/forecast';
-            $response = Http::timeout(60)->post($pythonApiUrl);
+            $response = Http::withoutVerifying()->timeout(60)->post($pythonApiUrl);
 
             if ($response->successful()) {
                 return response()->json($response->json());
@@ -251,7 +251,7 @@ class DashboardController extends Controller
     {
         try {
             $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/clustering';
-            $response = Http::timeout(60)->get($pythonApiUrl);
+            $response = Http::withoutVerifying()->timeout(60)->get($pythonApiUrl);
 
             if ($response->successful()) {
                 return response()->json($response->json());
