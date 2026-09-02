@@ -215,6 +215,17 @@
             let cachedPosition = null;
             let gpsPermissionState = 'unknown';
 
+            // Cek HTTPS / Secure Context
+            if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                console.error('Geolocation disabled: not running in a Secure Context (HTTPS).');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Wajib HTTPS',
+                    text: 'Fitur GPS mewajibkan koneksi aman (HTTPS). Buka halaman ini via https:// bukan http://',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+
             function requestGpsEarly() {
                 if (!navigator.geolocation) return;
 
