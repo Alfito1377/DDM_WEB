@@ -227,62 +227,81 @@ class AuthController extends Controller
     }
 
     /**
-     * Memproses login via API (Mobile App) menggunakan Sanctum
+     * Memproses login via API (Mobile App) menggunakan JWT
      */
     public function apiLogin(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'device_id' => 'required|string', // Pastikan device_id dikirim oleh aplikasi
-        ]);
+        try {
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ]);
+            
+            $request->validate([
+                'device_id' => 'required|string', // Pastikan device_id dikirim oleh aplikasi
+            ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email atau password salah.'
-            ], 401);
-        }
-
-        // ==========================================
-        // LOGIKA DEVICE BINDING (KUNCI 1 HP 1 AKUN)
-        // ==========================================
-        if (is_null($user->device_id)) {
-            // Jika belum ada device_id yang terikat, daftarkan device ini
-            $user->device_id = $request->device_id;
-            $user->save();
-        } else {
-            // Jika sudah terikat, cocokkan dengan device_id yang dikirim
-            if ($user->device_id !== $request->device_id) {
+            // Attempt login dengan JWT
+            if (! $token = Auth::guard('api')->attempt($credentials)) {
+                \Illuminate\Support\Facades\Log::warning('API Login Failed: Invalid credentials for email: ' . $request->email);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Akun ini sudah terikat dengan perangkat lain. Hubungi admin untuk mengganti perangkat.'
-                ], 403);
+                    'message' => 'Email atau password salah.'
+                ], 401);
             }
-        }
-        // ==========================================
 
-        // Hapus token lama jika diinginkan (opsional)
-        // $user->tokens()->delete();
+            /** @var \App\Models\User $user */
+            $user = Auth::guard('api')->user();
 
-        // Buat token baru
-        $token = $user->createToken('mobile-app-token')->plainTextToken;
+            // ==========================================
+            // LOGIKA DEVICE BINDING (KUNCI 1 HP 1 AKUN)
+            // ==========================================
+            if (is_null($user->device_id)) {
+                // Jika belum ada device_id yang terikat, daftarkan device ini
+                $user->device_id = $request->device_id;
+                $user->save();
+            } else {
+                // Jika sudah terikat, cocokkan dengan device_id yang dikirim
+                if ($user->device_id !== $request->device_id) {
+                    \Illuminate\Support\Facades\Log::warning("API Login Failed: Device ID mismatch for user ID {$user->id}. Expected: {$user->device_id}, Received: {$request->device_id}");
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Akun ini sudah terikat dengan perangkat lain. Hubungi admin untuk mengganti perangkat.'
+                    ], 403);
+                }
+            }
+            // ==========================================
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login berhasil',
-            'data' => [
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role->role_name ?? ''
+            \Illuminate\Support\Facades\Log::info("API Login Success: User ID {$user->id}");
+            return response()->json([
+                'success' => true,
+                'message' => 'Login berhasil',
+                'data' => [
+                    'token' => $token,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role->role_name ?? ''
+                    ]
                 ]
-            ]
-        ]);
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('API Login Validation Error: ' . json_encode($e->errors()));
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('API Login Fatal Error: ' . $e->getMessage() . ' di baris ' . $e->getLine() . ' file ' . $e->getFile());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server (500).',
+                'error_detail' => config('app.debug') ? $e->getMessage() : 'Silakan hubungi administrator.'
+            ], 500);
+        }
     }
 
     /**

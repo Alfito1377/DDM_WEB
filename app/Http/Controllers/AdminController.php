@@ -379,6 +379,11 @@ class AdminController extends Controller
                 $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
             }
             
+            // Jika checkbox reset_device_id dicentang, kosongkan device_id
+            if ($request->has('reset_device_id')) {
+                $user->device_id = null;
+            }
+            
             $user->save();
 
             return back()->with('success', 'Data Petugas Lapang berhasil diperbarui!');

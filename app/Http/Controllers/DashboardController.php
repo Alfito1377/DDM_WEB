@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\KnowledgeBase;
 
@@ -13,7 +15,7 @@ class DashboardController extends Controller
     {
         $today = Carbon::today();
 
-        
+
         $receiptsToday = DB::table('delivery_receipts')->count();
 
         // Total Scan Hari Ini: Mengambil dari tabel logistic_scans (jika tabel ini kosong, Anda bisa fallback ke logistic)
@@ -40,15 +42,15 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 2. FLEET STATS (Armada & Sopir) - Logika dari controller asli
         // ---------------------------------------------------------
-        
+
         $totalVehicles = DB::table('vehicle')->count();
-        $totalDrivers = DB::table('driver')->count(); 
-        
+        $totalDrivers = DB::table('driver')->count();
+
         $onTripVehicles = DB::table('logistic')
             ->where('status', 'in_transit')
             ->distinct('vehicleId')
             ->count('vehicleId');
-            
+
         $onTripDrivers = DB::table('logistic')
             ->where('status', 'in_transit')
             ->distinct('driverId')
@@ -56,7 +58,7 @@ class DashboardController extends Controller
 
         $fleetStats = [
             'ready_driver'  => max(0, $totalDrivers - $onTripDrivers),
-            'on_trip'       => $onTripVehicles, 
+            'on_trip'       => $onTripVehicles,
             'vehicle_ready' => max(0, $totalVehicles - $onTripVehicles),
             'maintenance'   => 0, // Di-nol-kan sementara kecuali Anda punya flag khusus
         ];
@@ -64,20 +66,20 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 3. GRAFIK TREN SURAT JALAN Selesai (7 Hari)
         // ---------------------------------------------------------
-        
+
         // ---------------------------------------------------------
         // 3. GRAFIK TREN SURAT JALAN TERKIRIM (7 Hari Terakhir)
         // ---------------------------------------------------------
-        
+
         $trendLabels = [];
         $trendData = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $trendLabels[] = $date->format('d M');
-            
+
             $trendData[] = DB::table('logistic')
-                ->where('status', 'completed') 
+                ->where('status', 'completed')
                 ->whereDate('created_at', $date)
                 ->count();
         }
@@ -85,7 +87,7 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 4. LIVE SCAN LOGISTIK (Modifikasi dari $recentActivities Anda)
         // ---------------------------------------------------------
-        
+
         $recentLogs = DB::table('logistic')
             ->orderBy('updated_at', 'desc')
             ->limit(6)
@@ -122,7 +124,7 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 5. TABEL PENGIRIMAN BERJALAN (In Transit)
         // ---------------------------------------------------------
-        
+
         // Kita kembali menggunakan join yang sudah terbukti jalan dari controller lama Anda
         $activeShipments = DB::table('logistic')
             ->join('driver', 'logistic.driverId', '=', 'driver.id_driver')
@@ -219,5 +221,53 @@ class DashboardController extends Controller
             'finalForecast',
             'latestCsv'
         ));
+    }
+
+    public function getForecast()
+    {
+        try {
+            $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/forecast';
+            $response = Http::withoutVerifying()->timeout(60)->post($pythonApiUrl);
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            Log::error('Python Forecast API Error: ' . $response->body());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data forecast dari service AI.'
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Koneksi ke Python Forecast Gagal: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Koneksi ke service Python AI gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getClustering()
+    {
+        try {
+            $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/clustering';
+            $response = Http::withoutVerifying()->timeout(60)->get($pythonApiUrl);
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            Log::error('Python Clustering API Error: ' . $response->body());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data clustering dari service AI.'
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Koneksi ke Python Clustering Gagal: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Koneksi ke service Python AI gagal: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
