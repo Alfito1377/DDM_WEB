@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <title>PT.Sage Maslahat</title>
     <script>
         window.AppConfig = {
@@ -12,6 +15,7 @@
     </script>
 </head>
 <meta name="csrf-token" content="{{ csrf_token() }}">
+
 <body class="bg-gray-50 flex h-screen overflow-hidden">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
@@ -30,7 +34,7 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('mobile-sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
@@ -41,4 +45,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -5,7 +5,7 @@
 
 <div class="w-full max-w-full space-y-4 sm:space-y-6">
 
-    {{-- HEADER --}}
+    {{-- HEADER UTAMA --}}
     <div class="bg-gradient-to-r from-white to-indigo-50/50 p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
         <div class="min-w-0">
             <h1 class="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
@@ -16,15 +16,16 @@
             </p>
         </div>
 
+        {{-- RINGKASAN SUMBER DAYA (ARMADA & SOPIR) --}}
         <div class="w-full lg:w-auto text-left lg:text-right bg-white px-4 sm:px-5 py-3 rounded-xl border border-indigo-100 shadow-sm shrink-0 flex gap-4">
             <div>
-                <p class="text-[10px] sm:text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Total Armada</p>
+                <p class="text-[10px] sm:text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Total Kendaraan</p>
                 <p class="text-xl sm:text-2xl font-black text-indigo-600 leading-none">
                     {{ $fleetStats['vehicle_ready'] + $fleetStats['on_trip'] + $fleetStats['maintenance'] }} <span class="text-xs font-medium text-gray-500">Unit</span>
                 </p>
             </div>
             <div class="border-l border-gray-200 pl-4">
-                <p class="text-[10px] sm:text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Total Sopir</p>
+                <p class="text-[10px] sm:text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Total Pengemudi</p>
                 <p class="text-xl sm:text-2xl font-black text-indigo-600 leading-none">
                     {{ $fleetStats['ready_driver'] + $fleetStats['on_trip'] }} <span class="text-xs font-medium text-gray-500">Orang</span>
                 </p>
@@ -32,7 +33,7 @@
         </div>
     </div>
 
-   {{-- 4 STATISTIC CARDS --}}
+   {{-- KARTU STATISTIK UTAMA (4 KOTAK INFORMASI) --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         
         {{-- 1. PENGIRIMAN BARU HARI INI --}}
@@ -41,7 +42,7 @@
                 <svg class="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             </div>
             <div class="min-w-0">
-                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Pengiriman Baru Hari Ini</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Dokumen Masuk Hari Ini</p>
                 <p class="text-xl sm:text-2xl font-black text-gray-800">{{ $stats['delivery_receipts_today'] ?? 0 }}</p>
             </div>
         </div>
@@ -52,7 +53,7 @@
                 <svg class="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
             </div>
             <div class="min-w-0">
-                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Total Aktivitas Scan</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Total Barang Di-Scan</p>
                 <p class="text-xl sm:text-2xl font-black text-purple-600">{{ $stats['total_scans_all_time'] ?? 0 }}</p>
             </div>
         </div>
@@ -63,7 +64,7 @@
                 <svg class="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             </div>
             <div class="min-w-0">
-                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Pengiriman Aktif (Transit)</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Sedang di Perjalanan</p>
                 <p class="text-xl sm:text-2xl font-black text-amber-600">{{ $stats['active_allocations'] ?? 0 }}</p>
             </div>
         </div>
@@ -74,15 +75,16 @@
                 <svg class="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
             </div>
             <div class="min-w-0">
-                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Tingkat Keberhasilan</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Persentase Sukses</p>
                 <p class="text-xl sm:text-2xl font-black text-green-600">{{ $stats['success_rate'] ?? '0%' }}</p>
             </div>
         </div>
     </div>
-    {{-- CHART & ACTIVITY SECTION --}}
+
+    {{-- BAGIAN GRAFIK & AKTIVITAS REALTIME --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
-        {{-- TREND PENGIRIMAN --}}
+        {{-- GRAFIK TREN PENGIRIMAN --}}
         <div class="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col min-w-0 border-t-4 border-t-indigo-500">
             <h2 class="text-xs sm:text-sm font-bold text-gray-800 mb-4 uppercase tracking-wider flex items-center gap-2">
                 <span class="p-1.5 bg-indigo-50 rounded-lg text-indigo-500 shrink-0">
@@ -90,17 +92,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
                 </span>
-                Pengiriman Dalam (7 Hari)
+                Grafik Volume Pengiriman Selesai (7 Hari Terakhir)
             </h2>
             <div class="relative w-full h-[300px] sm:h-[350px] min-w-0">
                 <canvas id="shipmentTrendChart"></canvas>
             </div>
         </div>
 
-        {{-- REALTIME SCANS --}}
+        {{-- RIWAYAT SCAN LAPANGAN (REALTIME) --}}
         <div class="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex flex-col min-w-0">
             <h2 class="text-xs sm:text-sm font-bold text-gray-800 mb-6 uppercase tracking-wider border-b border-gray-100 pb-3">
-                Live Scan Logistik
+                Aktivitas Scan Gudang Terbaru
             </h2>
             <div class="flow-root overflow-y-auto max-h-[300px] sm:max-h-[350px] pr-2">
                 <ul role="list" class="-mb-8">
@@ -129,17 +131,17 @@
                         </div>
                     </li>
                     @empty
-                    <p class="text-sm text-gray-500 text-center py-4">Belum ada scan hari ini.</p>
+                    <p class="text-sm text-gray-500 text-center py-4">Belum ada riwayat scan.</p>
                     @endforelse
                 </ul>
             </div>
         </div>
     </div>
 
-    {{-- SURAT JALAN / DELIVERY RECEIPTS TABLE --}}
+    {{-- TABEL DAFTAR PENGIRIMAN BERJALAN --}}
     <div class="bg-white rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm overflow-hidden border-t-4 border-t-blue-500">
         <div class="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-            <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider"> Pengiriman Aktif</h2>
+            <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Daftar Pengiriman yang Sedang Berjalan (Di Jalan)</h2>
             <button class="text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">Lihat Semua</button>
         </div>
         <div class="overflow-x-auto">
@@ -147,11 +149,11 @@
                 <thead>
                     <tr class="bg-white border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wider">
                         <th class="px-6 py-4 font-bold">No. Surat Jalan</th>
-                        <th class="px-6 py-4 font-bold">Mitra / Toko</th>
-                        <th class="px-6 py-4 font-bold">Sopir</th>
-                        <th class="px-6 py-4 font-bold">No. Kendaraan</th>
-                        <th class="px-6 py-4 font-bold">Waktu Update</th>
-                        <th class="px-6 py-4 font-bold">Status</th>
+                        <th class="px-6 py-4 font-bold">Tujuan / Nama Toko</th>
+                        <th class="px-6 py-4 font-bold">Nama Pengemudi</th>
+                        <th class="px-6 py-4 font-bold">Nomor Kendaraan</th>
+                        <th class="px-6 py-4 font-bold">Waktu Pembaruan</th>
+                        <th class="px-6 py-4 font-bold">Status Lapangan</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm text-gray-700">
@@ -168,7 +170,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold uppercase tracking-wider">
-                                    In Transit
+                                    Dalam Perjalanan
                                 </span>
                             </td>
                         </tr>
@@ -178,7 +180,7 @@
                                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
                                     <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
                                 </div>
-                                <p class="text-sm font-medium text-gray-500">Tidak ada pengiriman berjalan saat ini.</p>
+                                <p class="text-sm font-medium text-gray-500">Tidak ada pengiriman yang sedang berjalan saat ini.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -190,7 +192,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Init Grafik Tren Surat Jalan
         const ctxTrend = document.getElementById('shipmentTrendChart').getContext('2d');
         const trendLabels = @json($trendLabels ?? []);
         const trendData = @json($trendData ?? []);
@@ -201,9 +202,9 @@
                 data: {
                     labels: trendLabels,
                     datasets: [{
-                        label: 'Surat Jalan Terkirim',
+                        label: 'Jumlah Pengiriman Selesai',
                         data: trendData,
-                        backgroundColor: 'rgba(99, 102, 241, 0.15)', // Indigo-500 with opacity
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
                         borderColor: '#6366f1',
                         borderWidth: 2,
                         borderRadius: 6,
