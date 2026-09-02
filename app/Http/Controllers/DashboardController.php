@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $today = Carbon::today();
 
-        
+
         $receiptsToday = DB::table('delivery_receipts')->count();
 
         // Total Scan Hari Ini: Mengambil dari tabel logistic_scans (jika tabel ini kosong, Anda bisa fallback ke logistic)
@@ -42,15 +42,15 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 2. FLEET STATS (Armada & Sopir) - Logika dari controller asli
         // ---------------------------------------------------------
-        
+
         $totalVehicles = DB::table('vehicle')->count();
-        $totalDrivers = DB::table('driver')->count(); 
-        
+        $totalDrivers = DB::table('driver')->count();
+
         $onTripVehicles = DB::table('logistic')
             ->where('status', 'in_transit')
             ->distinct('vehicleId')
             ->count('vehicleId');
-            
+
         $onTripDrivers = DB::table('logistic')
             ->where('status', 'in_transit')
             ->distinct('driverId')
@@ -58,7 +58,7 @@ class DashboardController extends Controller
 
         $fleetStats = [
             'ready_driver'  => max(0, $totalDrivers - $onTripDrivers),
-            'on_trip'       => $onTripVehicles, 
+            'on_trip'       => $onTripVehicles,
             'vehicle_ready' => max(0, $totalVehicles - $onTripVehicles),
             'maintenance'   => 0, // Di-nol-kan sementara kecuali Anda punya flag khusus
         ];
@@ -66,20 +66,20 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 3. GRAFIK TREN SURAT JALAN Selesai (7 Hari)
         // ---------------------------------------------------------
-        
+
         // ---------------------------------------------------------
         // 3. GRAFIK TREN SURAT JALAN TERKIRIM (7 Hari Terakhir)
         // ---------------------------------------------------------
-        
+
         $trendLabels = [];
         $trendData = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $trendLabels[] = $date->format('d M');
-            
+
             $trendData[] = DB::table('logistic')
-                ->where('status', 'completed') 
+                ->where('status', 'completed')
                 ->whereDate('created_at', $date)
                 ->count();
         }
@@ -87,7 +87,7 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 4. LIVE SCAN LOGISTIK (Modifikasi dari $recentActivities Anda)
         // ---------------------------------------------------------
-        
+
         $recentLogs = DB::table('logistic')
             ->orderBy('updated_at', 'desc')
             ->limit(6)
@@ -124,7 +124,7 @@ class DashboardController extends Controller
         // ---------------------------------------------------------
         // 5. TABEL PENGIRIMAN BERJALAN (In Transit)
         // ---------------------------------------------------------
-        
+
         // Kita kembali menggunakan join yang sudah terbukti jalan dari controller lama Anda
         $activeShipments = DB::table('logistic')
             ->join('driver', 'logistic.driverId', '=', 'driver.id_driver')
@@ -226,7 +226,7 @@ class DashboardController extends Controller
     public function getForecast()
     {
         try {
-            $pythonApiUrl = rtrim(env('PYTHON_API', env('AI_SERVICE_URL', 'http://127.0.0.1:8001')), '/') . '/forecast';
+            $pythonApiUrl = env('PYTHON_API') . '/forecast';
             $response = Http::timeout(60)->post($pythonApiUrl);
 
             if ($response->successful()) {
@@ -250,7 +250,7 @@ class DashboardController extends Controller
     public function getClustering()
     {
         try {
-            $pythonApiUrl = rtrim(env('PYTHON_API', env('AI_SERVICE_URL', 'http://127.0.0.1:8001')), '/') . '/clustering';
+            $pythonApiUrl = env('PYTHON_API') . '/clustering';
             $response = Http::timeout(60)->get($pythonApiUrl);
 
             if ($response->successful()) {
