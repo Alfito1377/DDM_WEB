@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\KnowledgeBase;
 
@@ -219,5 +221,53 @@ class DashboardController extends Controller
             'finalForecast',
             'latestCsv'
         ));
+    }
+
+    public function getForecast()
+    {
+        try {
+            $pythonApiUrl = rtrim(env('PYTHON_API', env('AI_SERVICE_URL', 'http://127.0.0.1:8001')), '/') . '/forecast';
+            $response = Http::timeout(60)->post($pythonApiUrl);
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            Log::error('Python Forecast API Error: ' . $response->body());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data forecast dari service AI.'
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Koneksi ke Python Forecast Gagal: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Koneksi ke service Python AI gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getClustering()
+    {
+        try {
+            $pythonApiUrl = rtrim(env('PYTHON_API', env('AI_SERVICE_URL', 'http://127.0.0.1:8001')), '/') . '/clustering';
+            $response = Http::timeout(60)->get($pythonApiUrl);
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            Log::error('Python Clustering API Error: ' . $response->body());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data clustering dari service AI.'
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Koneksi ke Python Clustering Gagal: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Koneksi ke service Python AI gagal: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

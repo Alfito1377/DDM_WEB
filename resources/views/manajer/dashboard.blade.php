@@ -251,13 +251,15 @@
         }
       }
 
-      // FUNGSI BARU: Tarik Data API Python & Render Chart Forecast
+      // FUNGSI BARU: Tarik Data API Python via Laravel Proxy & Render Chart Forecast
       async function initPythonForecastChart() {
         try {
-          // Ubah endpoint sesuai rute POST di project kamu
-          const response = await fetch('{{ env("PYTHON_API") }}/forecast', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+          const response = await fetch('{{ route("dashboard.analytics.forecast") }}', {
+            method: 'GET',
+            headers: { 
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
           });
           const result = await response.json();
 
@@ -311,8 +313,13 @@
 
       async function initClusterChart() {
         try {
-          // Sesuaikan dengan endpoint API clustering kamu
-          const response = await fetch('{{ env('PYTHON_API') }}/clustering', { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+          const response = await fetch('{{ route("dashboard.analytics.clustering") }}', { 
+            method: 'GET', 
+            headers: { 
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            } 
+          });
           const result = await response.json();
 
           if (result.data && result.data.length > 0) {

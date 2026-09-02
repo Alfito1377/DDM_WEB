@@ -53,6 +53,10 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         return redirect('/superadmin/daftar-customer');
     });
 
+    // Rute proxy backend ke Python Analytics API
+    Route::get('/api/analytics/forecast', [DashboardController::class, 'getForecast'])->name('dashboard.analytics.forecast');
+    Route::get('/api/analytics/clustering', [DashboardController::class, 'getClustering'])->name('dashboard.analytics.clustering');
+
     // RUTE PREFIX SUPERADMIN
     Route::prefix('superadmin')->group(function () {
         Route::get('/dashboard-logistik', [DashboardController::class, 'index']);
