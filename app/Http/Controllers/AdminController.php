@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 
 class AdminController extends Controller
@@ -188,6 +190,112 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Download Template Excel
+     */
+    public function downloadTemplate()
+    {
+        // Path menuju file excel di dalam folder public/templates
+        $filePath = public_path('templates/template_excel_input_mitra.xlsx');
+
+        // Cek apakah file benar-benar ada untuk mencegah error
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File template tidak ditemukan.');
+        }
+
+        // Return response download
+        return response()->download($filePath, 'template_excel_input_mitra.xlsx');
+    }
+
+    /**
+     * Import data mitra dari excel
+     */
+    public function importExcel(Request $request) {
+        // 1. Validasi file Excel
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240', // Maksimal 10MB
+        ]);
+
+        $file = $request->file('file');
+
+        try {
+            // 2. Kirim file ke API Python menggunakan HTTP Facade
+            // Kita menggunakan fopen() agar memori server PHP tidak terbebani jika file Excelnya besar
+            $response = Http::attach(
+                'file', // Nama field yang diharapkan oleh API Python
+                fopen($file->path(), 'r'), // Membuka stream file sementara
+                $file->getClientOriginalName() // Mengirimkan nama file aslinya
+            )->post(env('PYTHON_API') . '/upload-excel'); // URL API Python Anda
+
+            // 3. Cek apakah response dari Python berhasil
+            if ($response->successful()) {
+                
+                // Ambil data JSON balasan dari Python
+                $dataDariPython = $response->json(); 
+
+                // Lakukan sesuatu dengan data tersebut (misal: simpan ke database)
+                // ... logic penyimpanan ke database MySQL via Eloquent ...
+                // Menggunakan transaksi DB agar aman
+                // DB::beginTransaction();
+                // dd($dataDariPython);
+                try {
+                    // dd($dataDariPython['data']);
+                    foreach($dataDariPython['data'] as $data) {
+                        // dd($data);
+                        // Buat Token QR Unik (40 Karakter Acak)
+                        $token_login = Str::random(40);
+                        $token_checkpoint = Str::random(40);
+
+                        // Simpan data toko ke database (Sudah ditambahkan kolom baru)
+                        $storeId = DB::table('stores')->insertGetId([
+                            'store_name' => $data['STORE_NAME'],
+                            'owner_name' => $data['OWNER_NAME'],
+                            'phone_number' => $data['PHONE_NUMBER'],
+                            'address' => $data['ADDRESS'],
+                            'jenis_mitra_id' => $data['JENIS_MITRA_ID'],
+                            'qr_token_login' => $token_login,
+                            'qr_token_checkpoint' => $token_checkpoint,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        DB::commit();
+
+                        // Susun URL Login dan Gambar QR Code
+                        $loginUrl = url('/login/qr/' . $token_login);
+                        $checkpointUrl = url('/login/qr/checkpoint/' . $token_checkpoint);
+                        $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($loginUrl);
+                        $qrCheckpointUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($checkpointUrl);
+                    }
+
+                    // return response()->json([
+                    //     'success' => true,
+                    //     'qr_image_login' => $qrImageUrl,
+                    //     'qr_checkpoint_image' => $qrCheckpointUrl,
+                    //     'login_url' => $loginUrl,
+                    // ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal mendaftarkan toko: ' . $e->getMessage()
+                    ], 500);
+                }
+
+                return redirect()->back()->with('success', 'File Excel berhasil diproses oleh Python!');
+            } else {
+                // Jika Python mengembalikan error (misal: format isi excel salah)
+                return redirect()->back()->with('error', 'Gagal memproses di Python: ' . $response->body());
+            }
+
+        } catch (\Exception $e) {
+            // Tangkap error jika API Python mati atau tidak bisa dihubungi
+            Log::error('Error koneksi ke API Python: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'API Python tidak dapat dihubungi.');
+        }
+    }
+
    /**
      * Menampilkan Halaman Daftar Petugas Lapang
      */

@@ -55,7 +55,7 @@
                 </form>
 
                 {{-- Tombol Tambah --}}
-                <button onclick="openRegisterModal()"
+                <button onclick="openChooseMethodModal()"
                     class="w-full sm:w-auto shrink-0 bg-green-600 text-white text-sm font-bold
                    px-4 py-3 sm:py-2.5 rounded-lg hover:bg-green-700 transition
                    shadow-sm flex items-center justify-center gap-2">
@@ -70,6 +70,114 @@
 
             </div>
         </div>
+        {{-- ========================================================= --}}
+        {{-- MODAL PILIH METODE TAMBAH --}}
+        {{-- ========================================================= --}}
+
+        <div id="chooseMethodModal"
+            class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
+                {{-- Header --}}
+                <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 class="font-bold text-gray-800 text-base sm:text-lg">
+                        Pilih Metode Input
+                    </h3>
+                    <button onclick="closeChooseMethodModal()" class="text-gray-400 hover:text-red-500 transition p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Content --}}
+                <div class="p-4 sm:p-6 flex flex-col gap-3">
+                    {{-- Opsi Manual --}}
+                    <button onclick="closeChooseMethodModal(); openRegisterModal();"
+                        class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition text-left group">
+                        <div class="bg-green-100 p-3 rounded-lg group-hover:bg-green-200 transition text-green-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-800">Input Manual</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Isi form data mitra satu per satu</div>
+                        </div>
+                    </button>
+
+                    {{-- Opsi Excel --}}
+                    <button onclick="closeChooseMethodModal(); openImportExcelModal();"
+                        class="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-left group">
+                        <div class="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition text-blue-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-800">Import Excel</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Upload file .xlsx untuk banyak data</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- ========================================================= --}}
+        {{-- MODAL IMPORT EXCEL --}}
+        {{-- ========================================================= --}}
+
+        <div id="importExcelModal"
+            class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col">
+                {{-- Header --}}
+                <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
+                    <h3 class="font-bold text-gray-800 text-base sm:text-lg">
+                        Import Data dari Excel
+                    </h3>
+                    <button onclick="closeImportExcelModal()" class="text-gray-400 hover:text-red-500 transition p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Content --}}
+                <div class="p-4 sm:p-6 overflow-y-auto">
+                    {{-- Sesuaikan URL action dengan route Laravel Anda nanti --}}
+                    <form id="formImportExcel" action="/superadmin/register-customer-excel" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        
+                        {{-- Area Drop/Pilih File --}}
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition cursor-pointer bg-gray-50 hover:bg-blue-50"
+                             onclick="document.getElementById('fileExcel').click()">
+                             
+                            <input type="file" id="fileExcel" name="file" accept=".xlsx, .xls" class="hidden" required onchange="updateFileName(this)">
+                            
+                            <div class="flex flex-col items-center pointer-events-none">
+                                <svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                <span class="font-bold text-gray-700 text-sm sm:text-base" id="fileNameDisplay">Klik untuk memilih file Excel</span>
+                                <span class="text-xs text-gray-500 mt-1">Format yang didukung: .xlsx, .xls</span>
+                            </div>
+                        </div>
+
+                        {{-- Link Download Template --}}
+                        <div class="flex justify-start items-center">
+                            {{-- Sesuaikan URL download template dengan route Laravel Anda --}}
+                            <a href="/superadmin/download-template" class="text-blue-600 hover:text-blue-700 hover:underline font-bold text-xs sm:text-sm flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download Template Excel
+                            </a>
+                        </div>
+
+                        {{-- Tombol Submit --}}
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-md">
+                                Upload & Simpan Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         {{-- ========================================================= --}}
         {{-- INFO SCROLL MOBILE --}}
         {{-- ========================================================= --}}
@@ -751,6 +859,71 @@
     {{-- ============================================================= --}}
 
     <script>
+        // ============================================================
+        // CHOOSE METHOD & IMPORT EXCEL MODAL
+        // ============================================================
+
+        // Tambahkan di dalam blok CLOSE MODAL CLICK OUTSIDE
+        document.getElementById('chooseMethodModal').addEventListener('click', function(e) {
+            if (e.target === this) closeChooseMethodModal();
+        });
+
+        document.getElementById('importExcelModal').addEventListener('click', function(e) {
+            if (e.target === this) closeImportExcelModal();
+        });
+
+        // ============================================================
+        // ESCAPE TO CLOSE MODAL
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeRegisterModal();
+                closeEditModal();
+                closeQR();
+                closeChooseMethodModal(); // <-- Tambahkan ini
+                closeImportExcelModal();  // <-- Tambahkan ini
+            }
+        });
+
+        function openChooseMethodModal() {
+            const modal = document.getElementById('chooseMethodModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeChooseMethodModal() {
+            const modal = document.getElementById('chooseMethodModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openImportExcelModal() {
+            const modal = document.getElementById('importExcelModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Reset input file saat modal dibuka
+            document.getElementById('formImportExcel').reset();
+            document.getElementById('fileNameDisplay').innerText = 'Klik untuk memilih file Excel';
+        }
+
+        function closeImportExcelModal() {
+            const modal = document.getElementById('importExcelModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Fungsi untuk mengupdate teks saat file dipilih
+        function updateFileName(input) {
+            const display = document.getElementById('fileNameDisplay');
+            if (input.files && input.files.length > 0) {
+                display.innerText = input.files[0].name;
+                display.classList.add('text-blue-600');
+            } else {
+                display.innerText = 'Klik untuk memilih file Excel';
+                display.classList.remove('text-blue-600');
+            }
+        }
         // ============================================================
         // REGISTER MODAL
         // ============================================================

@@ -59,6 +59,8 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         Route::get('/dashboard-analitik', [DashboardController::class, 'indexManager']);
         Route::get('/daftar-customer', [AdminController::class, 'daftarCustomer']);
         Route::post('/register-customer', [AdminController::class, 'storeCustomer']);
+        Route::post('/register-customer-excel', [AdminController::class, 'importExcel']);
+        Route::get('/download-template', [AdminController::class, 'downloadTemplate']);
         Route::get('/edit-customer/{id}', [AdminController::class, 'editCustomer']);
         Route::put('/update-customer/{id}', [AdminController::class, 'updateCustomer']);
         Route::delete('/delete-customer/{id}', [AdminController::class, 'destroyCustomer']);
