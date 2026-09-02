@@ -11,114 +11,144 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $activeCount = DB::table('logistic')->where('status', 'in_transit')->count();
-        $completedToday = DB::table('logistic')
-            ->where('status', 'completed')
-            ->whereDate('updated_at', Carbon::today())
+        $today = Carbon::today();
+
+        
+        $receiptsToday = DB::table('delivery_receipts')->count();
+
+        // Total Scan Hari Ini: Mengambil dari tabel logistic_scans (jika tabel ini kosong, Anda bisa fallback ke logistic)
+        $totalScans = DB::table('logistic_scans')
             ->count();
 
-        $avgHours = DB::table('logistic')
-            ->where('status', 'completed')
-            ->whereNotNull('departedAt')
-            ->whereNotNull('arrivedAt')
-            ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, departedAt, arrivedAt)) as avg_hours')
-            ->value('avg_hours');
+        // Alokasi Berjalan: Kita ambil dari logistic yang berstatus 'in_transit'
+        $activeAllocations = DB::table('logistic')
+            ->where('status', 'in_transit')
+            ->count();
+
+        // Success Rate: Persentase selesai dari total data logistik
+        $totalLogistic = DB::table('logistic')->count();
+        $completedLogistic = DB::table('logistic')->where('status', 'completed')->count();
+        $successRate = $totalLogistic > 0 ? round(($completedLogistic / $totalLogistic) * 100) : 0;
 
         $stats = [
-            'activeShipments' => $activeCount,
-            'completedToday'  => $completedToday,
-            'avgDeliveryTime' => round($avgHours ?? 0, 1),
+            'delivery_receipts_today' => $receiptsToday,
+            'total_scans_all_time'    => $totalScans,
+            'active_allocations'      => $activeAllocations,
+            'success_rate'            => $successRate . '%',
         ];
 
+        // ---------------------------------------------------------
+        // 2. FLEET STATS (Armada & Sopir) - Logika dari controller asli
+        // ---------------------------------------------------------
+        
+        $totalVehicles = DB::table('vehicle')->count();
+        $totalDrivers = DB::table('driver')->count(); 
+        
+        $onTripVehicles = DB::table('logistic')
+            ->where('status', 'in_transit')
+            ->distinct('vehicleId')
+            ->count('vehicleId');
+            
+        $onTripDrivers = DB::table('logistic')
+            ->where('status', 'in_transit')
+            ->distinct('driverId')
+            ->count('driverId');
+
+        $fleetStats = [
+            'ready_driver'  => max(0, $totalDrivers - $onTripDrivers),
+            'on_trip'       => $onTripVehicles, 
+            'vehicle_ready' => max(0, $totalVehicles - $onTripVehicles),
+            'maintenance'   => 0, // Di-nol-kan sementara kecuali Anda punya flag khusus
+        ];
+
+        // ---------------------------------------------------------
+        // 3. GRAFIK TREN SURAT JALAN Selesai (7 Hari)
+        // ---------------------------------------------------------
+        
+        // ---------------------------------------------------------
+        // 3. GRAFIK TREN SURAT JALAN TERKIRIM (7 Hari Terakhir)
+        // ---------------------------------------------------------
+        
+        $trendLabels = [];
+        $trendData = [];
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $trendLabels[] = $date->format('d M');
+            
+            $trendData[] = DB::table('logistic')
+                ->where('status', 'completed') 
+                ->whereDate('created_at', $date)
+                ->count();
+        }
+
+        // ---------------------------------------------------------
+        // 4. LIVE SCAN LOGISTIK (Modifikasi dari $recentActivities Anda)
+        // ---------------------------------------------------------
+        
+        $recentLogs = DB::table('logistic')
+            ->orderBy('updated_at', 'desc')
+            ->limit(6)
+            ->get();
+
+        $colorMap = [
+            'in_transit'     => 'blue',
+            'out_of_transit' => 'purple',
+            'completed'      => 'green',
+            'packed'         => 'yellow',
+            'pending'        => 'gray',
+            'cancelled'      => 'red',
+        ];
+
+        $statusLabelMap = [
+            'in_transit'     => 'Dalam Perjalanan',
+            'out_of_transit' => 'Tiba di Tujuan',
+            'completed'      => 'Selesai Dibongkar',
+            'packed'         => 'Dikemas',
+            'pending'        => 'Menunggu',
+            'cancelled'      => 'Dibatalkan',
+        ];
+
+        // Mapping ke format yang dibutuhkan oleh Blade baru (resi, status, time, color)
+        $recentScans = $recentLogs->map(function ($log) use ($colorMap, $statusLabelMap) {
+            return [
+                'resi'   => $log->shipmentId,
+                'status' => $statusLabelMap[$log->status] ?? $log->status,
+                'time'   => Carbon::parse($log->updated_at)->format('H:i'),
+                'color'  => $colorMap[$log->status] ?? 'gray',
+            ];
+        })->toArray();
+
+        // ---------------------------------------------------------
+        // 5. TABEL PENGIRIMAN BERJALAN (In Transit)
+        // ---------------------------------------------------------
+        
+        // Kita kembali menggunakan join yang sudah terbukti jalan dari controller lama Anda
         $activeShipments = DB::table('logistic')
             ->join('driver', 'logistic.driverId', '=', 'driver.id_driver')
             ->join('vehicle', 'logistic.vehicleId', '=', 'vehicle.id_vehicle')
             ->where('logistic.status', 'in_transit')
             ->select(
-                'logistic.shipmentId as shipment_id',
-                'logistic.destination',
-                'logistic.departedAt as departed_at',
+                'logistic.shipmentId as receipt_number',
+                'logistic.destination as store_name',
                 'driver.name as driver_name',
-                'vehicle.plateNo as vehicle_no'
+                'vehicle.plateNo as vehicle_no',
+                'logistic.updated_at'
             )
-            ->orderBy('logistic.departedAt', 'desc')
-            ->get();
-
-        $chartLabels = [];
-        $chartData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $chartLabels[] = $date->format('d M');
-            $chartData[] = DB::table('logistic')
-                ->where('status', 'completed')
-                ->whereDate('arrivedAt', $date)
-                ->count();
-        }
-
-        $totalVehicles = DB::table('vehicle')->count();
-        $onTrip = DB::table('logistic')
-            ->where('status', 'in_transit')
-            ->distinct('vehicleId')
-            ->count('vehicleId');
-
-        $vehicleStats = [
-            'available' => max(0, $totalVehicles - $onTrip),
-            'on_trip' => $onTrip,
-            'maintenance' => 0,
-        ];
-
-        $statusDistribution = [
-            'pending' => DB::table('logistic')->where('status', 'pending')->count(),
-            'packed' => DB::table('logistic')->where('status', 'packed')->count(),
-            'in_transit' => $activeCount,
-            'completed' => DB::table('logistic')->where('status', 'completed')->count(),
-        ];
-
-        $recentLogs = DB::table('logistic')
-            ->join('driver', 'logistic.driverId', '=', 'driver.id_driver')
-            ->join('vehicle', 'logistic.vehicleId', '=', 'vehicle.id_vehicle')
             ->orderBy('logistic.updated_at', 'desc')
-            ->select('logistic.*', 'driver.name as driver_name', 'vehicle.plateNo')
-            ->limit(5)
+            ->limit(10)
             ->get();
-
-        $colorMap = [
-            'in_transit' => 'blue',
-            'out_of_transit' => 'purple',
-            'completed' => 'green',
-            'packed' => 'yellow',
-            'pending' => 'gray',
-            'cancelled' => 'red',
-        ];
-
-        $statusLabelMap = [
-            'in_transit' => 'dalam perjalanan',
-            'out_of_transit' => 'tiba di tujuan',
-            'completed' => 'selesai dibongkar',
-            'packed' => 'dikemas',
-            'pending' => 'menunggu',
-            'cancelled' => 'dibatalkan',
-        ];
-
-        $recentActivities = $recentLogs->map(function ($log) use ($colorMap, $statusLabelMap) {
-            $label = $statusLabelMap[$log->status] ?? $log->status;
-            return [
-                'time' => Carbon::parse($log->updated_at)->format('H:i'),
-                'message' => "Pengiriman {$log->shipmentId} ke {$log->destination} - {$label}. Driver: {$log->driver_name} ({$log->plateNo})",
-                'color' => $colorMap[$log->status] ?? 'gray',
-            ];
-        })->toArray();
 
         return view('shared.dashboard-visual', compact(
             'stats',
-            'activeShipments',
-            'chartLabels',
-            'chartData',
-            'vehicleStats',
-            'statusDistribution',
-            'recentActivities'
+            'fleetStats',
+            'trendLabels',
+            'trendData',
+            'recentScans',
+            'activeShipments'
         ));
     }
+
 
     public function indexManager()
     {

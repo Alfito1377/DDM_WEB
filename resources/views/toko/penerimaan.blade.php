@@ -14,7 +14,7 @@
         {{-- =========================================================
         MODAL SET LOKASI TOKO
     ========================================================== --}}
-        @if ($toko && is_null($toko->latitude))
+@if ($toko && empty($toko->latitude))
             <div id="modalSetLokasiToko"
                 class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-3 sm:p-4">
 
@@ -464,27 +464,17 @@
                     }
                 },
                 
-                // 2. JIKA GAGAL MENDAPATKAN LOKASI
+               // 2. JIKA GAGAL MENDAPATKAN LOKASI
                 function(error) {
-                    console.error("GPS Error Code:", error.code, "Message:", error.message);
-                    
-                    let pesanError = "Gagal membaca GPS.";
-                    if (error.code === 1) {
-                        pesanError = "Akses Lokasi Ditolak! Harap klik ikon Gembok di dekat URL browser, lalu Izinkan (Allow) Akses Lokasi.";
-                    } else if (error.code === 2) {
-                        pesanError = "Sinyal GPS tidak tersedia atau perangkat tidak memiliki sensor GPS.";
-                    } else if (error.code === 3) {
-                        pesanError = "Pencarian GPS terlalu lama (Timeout). Pastikan layanan lokasi/GPS di HP atau Windows Anda sudah menyala.";
-                    }
-
-                    alert(pesanError);
+                    // Memunculkan pesan error mentah dari browser secara langsung
+                    alert("Browser Error Code: " + error.code + "\nPesan Asli: " + error.message);
                     resetTombol(btn, originalText);
                 },
                 
                 // 3. PENGATURAN SENSOR GPS
                 {
                     enableHighAccuracy: true,
-                    timeout: 15000, // Waktu tunggu maksimal diperpanjang jadi 15 detik
+                    timeout: 20000, // Waktu tunggu maksimal diperpanjang jadi 20 detik
                     maximumAge: 0
                 }
             );

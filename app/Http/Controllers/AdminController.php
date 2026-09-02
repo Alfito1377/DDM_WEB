@@ -188,60 +188,164 @@ class AdminController extends Controller
             ], 500);
         }
     }
+   /**
+     * Menampilkan Halaman Daftar Petugas Lapang
+     */
+    public function daftarPetugasLapang(Request $request)
+    {
+        $search = $request->input('search');
 
+        // Filter menggunakan exact role_name dari seeder ('pekerja_lapang')
+        $query = \App\Models\User::with('store')->whereHas('role', function ($q) {
+            $q->where('role_name', 'pekerja_lapang');
+        });
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $petugasLapang = $query->latest()->paginate(10)->withQueryString();
+
+        return view('admin.daftar_petugas_lapang.index', compact('petugasLapang', 'search'));
+    }
+
+    /**
+     * Memproses Form Tambah Petugas Lapang Baru
+     */
+    public function storePetugasLapang(Request $request)
+    {
+        // 1. Validasi input
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+        ]);
+
+        try {
+            // 2. Ambil ID Role dan ID Store otomatis berdasarkan seeder
+            $pekerjaLapangRoleId = \App\Models\Role::where('role_name', 'pekerja_lapang')->value('id');
+            $virtualStoreId = \App\Models\StoresModel::where('store_name', 'Gudang Pekerja Lapang Utama')->value('id');
+
+            // Cek jika role atau store virtual belum ada
+            if (!$pekerjaLapangRoleId || !$virtualStoreId) {
+                return back()->with('error', 'Data Role atau Gudang Virtual belum disetup di database.');
+            }
+
+            // 3. Simpan ke database
+            \App\Models\User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+                'role_id' => $pekerjaLapangRoleId,
+                'store_id' => $virtualStoreId,
+            ]);
+
+            return back()->with('success', 'Petugas Lapang berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menambahkan petugas: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Memproses Form Edit Petugas Lapang
+     */
+    public function updatePetugasLapang(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            // Pengecualian email agar tidak error jika tidak diubah
+            'email' => 'required|email|unique:users,email,' . $id, 
+            'password' => 'nullable|min:8', // Password opsional saat edit
+        ]);
+
+        try {
+            $user = \App\Models\User::findOrFail($id);
+            $user->name = $request->name;
+            $user->email = $request->email;
+            
+            // Hanya update password jika form password diisi
+            if ($request->filled('password')) {
+                $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            }
+            
+            $user->save();
+
+            return back()->with('success', 'Data Petugas Lapang berhasil diperbarui!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui petugas: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Memproses Hapus Petugas Lapang
+     */
+    public function destroyPetugasLapang($id)
+    {
+        try {
+            $user = \App\Models\User::findOrFail($id);
+            $user->delete();
+
+            return back()->with('success', 'Petugas Lapang berhasil dihapus!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus petugas: ' . $e->getMessage());
+        }
+    }
 
     public function daftarPengiriman(Request $request)
-{
-    $query = LogisticModel::latest();
+    {
+        $query = LogisticModel::latest();
 
-    if ($request->filled('status')) {
-        $query->where('status', $request->status);
-    }
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $matchedDriverIds = DriversModel::where('name', 'like', "%{$search}%")
-            ->pluck('id_driver');
-
-        $matchedVehicleIds = VehicleModel::where('plateNo', 'like', "%{$search}%")
-            ->orWhere('vehicleType', 'like', "%{$search}%")
-            ->pluck('id_vehicle');
-
-        $query->where(function ($q) use ($search, $matchedDriverIds, $matchedVehicleIds) {
-            $q->where('destination', 'like', "%{$search}%")
-              ->orWhereIn('driverId', $matchedDriverIds)
-              ->orWhereIn('vehicleId', $matchedVehicleIds);
-        });
-    }
-
-    $logistics = $query->paginate(20);
-
-    foreach ($logistics as $logistic) {
-        $logistic->departedAt = $this->formatDate($logistic->departedAt);
-        $logistic->status = $this->formatStatus($logistic->status);
-
-        if ($logistic->id_mitra) {
-            $logistic->mitra = StoresModel::find($logistic->id_mitra);
-        } else {
-            $logistic->mitra = null;
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
-        if ($logistic->driverId) {
-            $logistic->driver = DriversModel::where('id_driver', $logistic->driverId)->first();
-        } else {
-            $logistic->driver = null;
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $matchedDriverIds = DriversModel::where('name', 'like', "%{$search}%")
+                ->pluck('id_driver');
+
+            $matchedVehicleIds = VehicleModel::where('plateNo', 'like', "%{$search}%")
+                ->orWhere('vehicleType', 'like', "%{$search}%")
+                ->pluck('id_vehicle');
+
+            $query->where(function ($q) use ($search, $matchedDriverIds, $matchedVehicleIds) {
+                $q->where('destination', 'like', "%{$search}%")
+                    ->orWhereIn('driverId', $matchedDriverIds)
+                    ->orWhereIn('vehicleId', $matchedVehicleIds);
+            });
         }
 
-        if ($logistic->vehicleId) {
-            $logistic->vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
-        } else {
-            $logistic->vehicle = null;
+        $logistics = $query->paginate(20);
+
+        foreach ($logistics as $logistic) {
+            $logistic->departedAt = $this->formatDate($logistic->departedAt);
+            $logistic->status = $this->formatStatus($logistic->status);
+
+            if ($logistic->id_mitra) {
+                $logistic->mitra = StoresModel::find($logistic->id_mitra);
+            } else {
+                $logistic->mitra = null;
+            }
+
+            if ($logistic->driverId) {
+                $logistic->driver = DriversModel::where('id_driver', $logistic->driverId)->first();
+            } else {
+                $logistic->driver = null;
+            }
+
+            if ($logistic->vehicleId) {
+                $logistic->vehicle = VehicleModel::where('id_vehicle', $logistic->vehicleId)->first();
+            } else {
+                $logistic->vehicle = null;
+            }
         }
+
+        // 6. Return data ke view
+        return view('admin.pengiriman.index', compact('logistics'));
     }
-
-    // 6. Return data ke view
-    return view('admin.pengiriman.index', compact('logistics'));
-}
 
     public function storePengiriman(Request $request)
     {
@@ -463,5 +567,4 @@ class AdminController extends Controller
 
         return back()->with('success', 'Reset lokasi disetujui. Toko sekarang harus mengatur ulang lokasinya.');
     }
-    
 }
