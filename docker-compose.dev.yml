@@ -1,0 +1,78 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        image: ddm-web-base:latest
+        container_name: ddm-web-app
+        restart: unless-stopped
+        user: root
+        volumes:
+            - .:/var/www/html
+        env_file:
+            - .env
+        networks:
+            - ddm
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+        healthcheck:
+            test: ["CMD-SHELL", "php-fpm-healthcheck || kill -0 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+
+    web:
+        image: nginx:alpine
+        container_name: ddm-web-nginx
+        restart: unless-stopped
+        ports:
+            - "8090:80"
+        volumes:
+            - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - .:/var/www/html:ro
+        networks:
+            - ddm
+        depends_on:
+            - app
+
+    migrate:
+        image: ddm-web-base:latest
+        container_name: ddm-web-migrate
+        env_file:
+            - .env
+        user: root
+        volumes:
+            - .:/var/www/html
+        entrypoint: ["sh", "-c"]
+        command:
+            - |
+                if [ ! -d "vendor" ] || [ "composer.lock" -nt "vendor/autoload.php" ]; then
+                    composer install --no-interaction --prefer-dist --optimize-autoloader
+                fi
+                php artisan migrate --force
+                php artisan optimize
+                php artisan storage:link || true
+        networks:
+            - ddm
+
+    queue:
+        image: ddm-web-base:latest
+        container_name: ddm-web-queue
+        restart: unless-stopped
+        env_file:
+            - .env
+        user: root
+        volumes:
+            - .:/var/www/html
+        entrypoint: ["entrypoint.sh"]
+        command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+        networks:
+            - ddm
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+networks:
+    ddm:
+        external: true
