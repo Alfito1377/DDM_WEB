@@ -250,6 +250,12 @@
                             </button>
                         </div>
                     </div>
+
+                    {{-- Fitur Reset Device ID --}}
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" name="reset_device_id" id="resetDeviceId" value="1" class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500">
+                        <label for="resetDeviceId" class="ml-2 text-sm font-medium text-gray-700">Reset Device ID (Izinkan login di perangkat baru)</label>
+                    </div>
                 </div>
                 
                 <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
