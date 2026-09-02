@@ -2,8 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\StoresModel;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +25,7 @@ Route::get('/user', function (Request $request) {
 */
 
 // Endpoint Login untuk Mobile App (Tidak butuh auth:sanctum)
-Route::post('/v1/login', [\App\Http\Controllers\AuthController::class, 'apiLogin']);
+Route::post('/v1/login', [AuthController::class, 'apiLogin']);
 
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     
@@ -31,7 +33,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/stores', function () {
         return response()->json([
             'success' => true,
-            'data' => \App\Models\StoresModel::select('id', 'store_name', 'owner_name', 'address')->orderBy('store_name', 'asc')->get()
+            'data' => StoresModel::select('id', 'store_name', 'owner_name', 'address')->orderBy('store_name', 'asc')->get()
         ]);
     });
     // Fitur Retur
