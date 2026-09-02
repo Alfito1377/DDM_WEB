@@ -129,7 +129,7 @@ class ReturnController extends Controller
 
                 // Kirim email ke masing-masing manajer
                 foreach ($managers as $manager) {
-                    Mail::to($manager->email)->send(new ReturnApprovalMail($returObj, $storeName, $manager->id));
+                    Mail::to($manager->email)->queue(new ReturnApprovalMail($returObj, $storeName, $manager->id));
                 }
             } catch (\Throwable $emailError) {
                 // Jika gagal kirim email, diamkan saja agar retur tetap berhasil tersimpan
@@ -348,56 +348,56 @@ class ReturnController extends Controller
      * Menampilkan daftar retur untuk Manajer
      */
     public function indexManager(Request $request)
-{
-    $query = DB::table('returns')
-        ->join('stores', 'returns.store_id', '=', 'stores.id')
-        ->join('return_details', 'returns.id', '=', 'return_details.return_id')
-        ->select(
-            'returns.*',
-            'stores.store_name',
-            'return_details.barcode',
-            'return_details.quantity'
-        );
+    {
+        $query = DB::table('returns')
+            ->join('stores', 'returns.store_id', '=', 'stores.id')
+            ->join('return_details', 'returns.id', '=', 'return_details.return_id')
+            ->select(
+                'returns.*',
+                'stores.store_name',
+                'return_details.barcode',
+                'return_details.quantity'
+            );
 
-    if ($request->filled('status')) {
-        $query->where('returns.status', $request->status);
+        if ($request->filled('status')) {
+            $query->where('returns.status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('stores.store_name', 'like', "%{$search}%")
+                    ->orWhere('return_details.barcode', 'like', "%{$search}%")
+                    ->orWhere('returns.reason', 'like', "%{$search}%")
+                    // Jika mencari ID / Kode Retur
+                    ->orWhere('returns.id', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderBy('returns.created_at', 'desc');
+
+
+        $returns = $query->paginate(15);
+
+
+        $pendingCount = DB::table('returns')
+            ->where('status', 'Pending')
+            ->count();
+
+        // Disetujui
+        $approvedCount = DB::table('returns')
+            ->where('status', 'Approved')
+            ->count();
+
+        // Ditolak
+        $rejectedCount = DB::table('returns')
+            ->where('status', 'Rejected')
+            ->count();
+
+
+        return view('manajer.retur-approval', compact('returns', 'pendingCount', 'approvedCount', 'rejectedCount'));
     }
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-        
-        $query->where(function($q) use ($search) {
-            $q->where('stores.store_name', 'like', "%{$search}%")
-              ->orWhere('return_details.barcode', 'like', "%{$search}%")
-              ->orWhere('returns.reason', 'like', "%{$search}%")
-              // Jika mencari ID / Kode Retur
-              ->orWhere('returns.id', 'like', "%{$search}%"); 
-        });
-    }
-
-    $query->orderBy('returns.created_at', 'desc');
-
-
-    $returns = $query->paginate(15);
-
-    
-    $pendingCount = DB::table('returns')
-        ->where('status', 'Pending')
-        ->count();
-
-    // Disetujui
-    $approvedCount = DB::table('returns')
-        ->where('status', 'Approved')
-        ->count();
-
-    // Ditolak
-    $rejectedCount = DB::table('returns')
-        ->where('status', 'Rejected')
-        ->count();
-
-
-    return view('manajer.retur-approval', compact('returns', 'pendingCount', 'approvedCount', 'rejectedCount'));
-}
     public function indexToko()
     {
         $storeId = Auth::user()->store_id;
@@ -699,10 +699,10 @@ class ReturnController extends Controller
             // Simpan koordinat baru
             $toko->latitude = $request->latitude;
             $toko->longitude = $request->longitude;
-            
+
             // Catat waktu kapan lokasi ini dikunci (untuk keperluan Cooldown 30 hari)
-            $toko->last_location_set_at = now(); 
-            
+            $toko->last_location_set_at = now();
+
             $toko->save();
 
             return response()->json(['success' => true, 'message' => 'Lokasi berhasil disimpan.']);

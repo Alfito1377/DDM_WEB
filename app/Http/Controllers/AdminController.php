@@ -211,7 +211,8 @@ class AdminController extends Controller
     /**
      * Import data mitra dari excel
      */
-    public function importExcel(Request $request) {
+    public function importExcel(Request $request)
+    {
         // 1. Validasi file Excel
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:10240', // Maksimal 10MB
@@ -226,13 +227,13 @@ class AdminController extends Controller
                 'file', // Nama field yang diharapkan oleh API Python
                 fopen($file->path(), 'r'), // Membuka stream file sementara
                 $file->getClientOriginalName() // Mengirimkan nama file aslinya
-            )->post(env('PYTHON_API') . '/upload-excel'); // URL API Python Anda
+            )->post(env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/upload-excel'); // URL API Python Anda
 
             // 3. Cek apakah response dari Python berhasil
             if ($response->successful()) {
-                
+
                 // Ambil data JSON balasan dari Python
-                $dataDariPython = $response->json(); 
+                $dataDariPython = $response->json();
 
                 // Lakukan sesuatu dengan data tersebut (misal: simpan ke database)
                 // ... logic penyimpanan ke database MySQL via Eloquent ...
@@ -241,7 +242,7 @@ class AdminController extends Controller
                 // dd($dataDariPython);
                 try {
                     // dd($dataDariPython['data']);
-                    foreach($dataDariPython['data'] as $data) {
+                    foreach ($dataDariPython['data'] as $data) {
                         // dd($data);
                         // Buat Token QR Unik (40 Karakter Acak)
                         $token_login = Str::random(40);
@@ -288,7 +289,6 @@ class AdminController extends Controller
                 // Jika Python mengembalikan error (misal: format isi excel salah)
                 return redirect()->back()->with('error', 'Gagal memproses di Python: ' . $response->body());
             }
-
         } catch (\Exception $e) {
             // Tangkap error jika API Python mati atau tidak bisa dihubungi
             Log::error('Error koneksi ke API Python: ' . $e->getMessage());
@@ -296,7 +296,7 @@ class AdminController extends Controller
         }
     }
 
-   /**
+    /**
      * Menampilkan Halaman Daftar Petugas Lapang
      */
     public function daftarPetugasLapang(Request $request)
@@ -311,7 +311,7 @@ class AdminController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -365,7 +365,7 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             // Pengecualian email agar tidak error jika tidak diubah
-            'email' => 'required|email|unique:users,email,' . $id, 
+            'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'nullable|min:8', // Password opsional saat edit
         ]);
 
@@ -373,17 +373,17 @@ class AdminController extends Controller
             $user = \App\Models\User::findOrFail($id);
             $user->name = $request->name;
             $user->email = $request->email;
-            
+
             // Hanya update password jika form password diisi
             if ($request->filled('password')) {
                 $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
             }
-            
+
             // Jika checkbox reset_device_id dicentang, kosongkan device_id
             if ($request->has('reset_device_id')) {
                 $user->device_id = null;
             }
-            
+
             $user->save();
 
             return back()->with('success', 'Data Petugas Lapang berhasil diperbarui!');
