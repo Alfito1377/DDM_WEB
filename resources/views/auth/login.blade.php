@@ -501,7 +501,7 @@
                                         required
                                         autocomplete="email"
                                         class="w-full border border-gray-300 px-4 py-3.5 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                                        placeholder="admin@jualbenih.co.id">
+                                        placeholder="admin@gmail.com">
 
                                 </div>
 
