@@ -226,7 +226,7 @@ class DashboardController extends Controller
     public function getForecast()
     {
         try {
-            $pythonApiUrl = env('PYTHON_API') . '/forecast';
+            $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/forecast';
             $response = Http::timeout(60)->post($pythonApiUrl);
 
             if ($response->successful()) {
@@ -250,7 +250,7 @@ class DashboardController extends Controller
     public function getClustering()
     {
         try {
-            $pythonApiUrl = env('PYTHON_API') . '/clustering';
+            $pythonApiUrl = env('PYTHON_API', 'http://analisis_ddm_api:8000') . '/clustering';
             $response = Http::timeout(60)->get($pythonApiUrl);
 
             if ($response->successful()) {
