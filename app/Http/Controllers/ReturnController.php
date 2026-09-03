@@ -61,20 +61,20 @@ class ReturnController extends Controller
             'proof_images.*' => 'image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
-        // $data = DB::table('logistic_scans as ls')
-        //     ->join('logistic as l', 'ls.logistic_id', '=', 'l.id')
-        //     ->join('stores as s', 's.id', '=', 'l.id_mitra')
-        //     ->where('ls.barcode', $request->barcode)
-        //     ->where('s.id', $request->store_id) // Tambahan filter untuk store_id
-        //     ->select('ls.barcode', 's.store_name')
-        //     ->first();
-        
-        // if(!$data) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Gagal menyimpan retur: Barang bukan berasal dari toko ini!'
-        //     ], 500);
-        // }
+        $data = DB::table('logistic_scans as ls')
+            ->join('logistic as l', 'ls.logistic_id', '=', 'l.id')
+            ->join('stores as s', 's.id', '=', 'l.id_mitra')
+            ->where('ls.barcode', $request->barcode)
+            ->where('s.id', $request->store_id) // Tambahan filter untuk store_id
+            ->select('ls.barcode', 's.store_name')
+            ->first();
+
+        if (!$data) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan retur: Barang bukan berasal dari toko ini!'
+            ], 500);
+        }
 
         try {
 
