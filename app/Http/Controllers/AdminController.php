@@ -335,7 +335,7 @@ class AdminController extends Controller
         try {
             // 2. Ambil ID Role dan ID Store otomatis berdasarkan seeder
             $pekerjaLapangRoleId = \App\Models\Role::where('role_name', 'pekerja_lapang')->value('id');
-            $virtualStoreId = \App\Models\StoresModel::where('store_name', 'Gudang Pekerja Lapang Utama')->value('id');
+            $virtualStoreId = \App\Models\StoresModel::where('store_name', 'Operasional Lapangan')->value('id');
 
             // Cek jika role atau store virtual belum ada
             if (!$pekerjaLapangRoleId || !$virtualStoreId) {
