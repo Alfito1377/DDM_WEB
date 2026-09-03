@@ -15,6 +15,6 @@ class RoleSeeder extends Seeder
             ['role_name' => 'pekerja_lapang']
         ];
 
-        DB::table('roles')->insert($roles);
+        DB::table('roles')->insertOrIgnore($roles);
     }
 }
