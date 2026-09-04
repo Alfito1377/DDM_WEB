@@ -29,10 +29,10 @@ class StoresModel extends Model
     {
         parent::boot();
         static::creating(function ($model) {
-            if (empty($model->qr_token)) {
-                // Generate a unique QR token when creating a new store
-                $model->qr_token = \Illuminate\Support\Str::random(40);
-            }
+            // if (empty($model->qr_token)) {
+            //     // Generate a unique QR token when creating a new store
+            //     $model->qr_token = \Illuminate\Support\Str::random(40);
+            // }
         });
     }
 }

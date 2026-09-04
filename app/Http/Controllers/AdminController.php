@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\DriversModel;
 use App\Models\JenisMitraModel;
 use App\Models\LogisticModel;
+use App\Models\LogisticScansModel;
 use App\Models\StoresModel;
 use App\Models\VehicleModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -238,7 +240,7 @@ class AdminController extends Controller
                 // Lakukan sesuatu dengan data tersebut (misal: simpan ke database)
                 // ... logic penyimpanan ke database MySQL via Eloquent ...
                 // Menggunakan transaksi DB agar aman
-                // DB::beginTransaction();
+                DB::beginTransaction();
                 // dd($dataDariPython);
                 try {
                     // dd($dataDariPython['data']);
@@ -409,10 +411,113 @@ class AdminController extends Controller
 
     public function daftarPengiriman(Request $request)
     {
+        $process_status = [
+            'fetch_data' => [
+                'status' => false,
+                'msg' => ''
+            ],
+            'filter' => [
+                'status' => false,
+                'msg' => ''
+            ],
+        ];
         $query = LogisticModel::latest();
+
+        if($request->fetch_data == 'true') {
+            $wms_data = Http::withToken(env('WMS_API_TOKEN'))->get(env('WMS_API_URL') . 'internal/logistics/active');
+            if($wms_data->successful()) {
+                $data_fetching = $wms_data->json();
+                DB::beginTransaction();
+                try {
+                    foreach($data_fetching['items'] as $data) {
+                        // Pertama tuh Validate Store
+                        $validate_store = StoresModel::where('store_name', $data['customer']['name'])->doesntExist();
+                        if($validate_store) {
+                            $token_login = Str::random(40);
+                            $token_checkpoint = Str::random(40);
+                            $validate_store = StoresModel::create([
+                                'jenis_mitra_id' => 2,
+                                'store_name' => $data['customer']['name'],
+                                'owner_name' => $data['customer']['name'],
+                                'phone_number' => '-',
+                                'address' => '-',
+                                'latitude' => null,
+                                'longitude' => null,
+                                'qr_token_login' => $token_login,
+                                'qr_token_checkpoint' => $token_checkpoint
+                            ]);
+                        } else {
+                            $validate_store = StoresModel::where('store_name', $data['customer']['name'])->latest()->first();
+                        }
+                        // Kedua Validate Driver
+                        $validate_driver = DriversModel::where('id_driver', $data['driver']['id'])->doesntExist();
+                        if($validate_driver) {
+                            $validate_driver = DriversModel::create([
+                                'id_driver' => $data['driver']['id'],
+                                'name' => $data['driver']['name'],
+                                'phone' => $data['driver']['phone'],
+                                'status' => $data['driver']['status'],
+                                'notes' => '-',
+                            ]);
+                        } else {
+                            $validate_driver = DriversModel::where('id_driver', $data['driver']['id'])->latest()->first();
+                        }
+                        // Ketiga Validate Vehicle
+                        $validate_vehicle = VehicleModel::where('id_vehicle', $data['vehicle']['id'])->doesntExist();
+                        if($validate_vehicle) {
+                            $validate_vehicle = VehicleModel::create([
+                                'id_vehicle' => $data['vehicle']['id'],
+                                'plateNo' => $data['vehicle']['plateNo'],
+                                'vehicleType' => $data['vehicle']['vehicleType'],
+                            ]);
+                        } else {
+                            $validate_vehicle = VehicleModel::where('id_vehicle', $data['vehicle']['id'])->latest()->first();
+                        }
+                        // Keempat Validasi Logistic
+                        $validate_logistic = LogisticModel::where('id_logistic', $data['id'])->doesntExist();
+                        if($validate_logistic) {
+                            $validate_logistic = LogisticModel::create([
+                                'id_logistic' => $data['id'],
+                                'shipmentId' => $data['shipmentId'],
+                                'status' => $data['status'],
+                                'id_mitra' => $validate_store->id,
+                                'destination' => '-',
+                                'driverId' => $validate_driver->id_driver,
+                                'vehicleId' => $validate_vehicle->id_vehicle,
+                                'departedAt' => Carbon::parse($data['departedAt'])->toDateTimeString(),
+                            ]);
+                        } else {
+                            $validate_logistic = LogisticModel::where('id_logistic', $data['id'])->latest()->first();
+                        }
+                        // Terakhir Validasi Logistic Scans
+                        $validate_log_scans = LogisticScansModel::where('logistic_id', $validate_logistic->id)->doesntExist();
+                        // dd($validate_log_scans);
+                        if($validate_log_scans) {
+                            foreach($data['sacks'] as $sack) {
+                                LogisticScansModel::create([
+                                    'logistic_id' => $validate_logistic->id,
+                                    'sack_id' => $sack['sackId'],
+                                    'barcode' => $sack['barcode'],
+                                ]);
+                            }
+                        }
+                    }
+                    DB::commit();
+                    $process_status['fetch_data']['status'] = true;
+                    $process_status['fetch_data']['msg'] = 'Sukses memasukkan data baru dari WMS, total ' . $data_fetching['total'] . '.';
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $process_status['fetch_data']['msg'] = ''. $e->getMessage();
+                    $process_status['fetch_data']['status'] = true;
+                    // $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
+                }
+            }
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+            $process_status['filter']['status'] = true;
+            $process_status['filter']['msg'] = 'Filter diterapkan';
         }
 
         if ($request->filled('search')) {
@@ -429,6 +534,8 @@ class AdminController extends Controller
                     ->orWhereIn('driverId', $matchedDriverIds)
                     ->orWhereIn('vehicleId', $matchedVehicleIds);
             });
+            $process_status['filter']['status'] = true;
+            $process_status['filter']['msg'] = 'Filter diterapkan';
         }
 
         $logistics = $query->paginate(20);
@@ -457,7 +564,7 @@ class AdminController extends Controller
         }
 
         // 6. Return data ke view
-        return view('admin.pengiriman.index', compact('logistics'));
+        return view('admin.pengiriman.index', compact('logistics', 'process_status'));
     }
 
     public function storePengiriman(Request $request)

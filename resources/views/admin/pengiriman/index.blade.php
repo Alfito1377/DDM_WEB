@@ -1,11 +1,53 @@
 @extends('layouts.app')
 
 @section('content')
+    {{-- {{ dd($process_status['filter']['status']) }} --}}
     <!-- Memanggil Library HTML5 QR Code -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
+
+        /* Base Alert Class */
+        .alert {
+            position: relative;
+            padding: 1rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem; /* Mirip dengan rounded Bootstrap */
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            box-sizing: border-box;
+        }
+
+        /* Success Alert (Warna Hijau) */
+        .alert-success {
+            color: #0f5132;
+            background-color: #d1e7dd;
+            border-color: #badbcc;
+        }
+
+        /* Warning Alert (Warna Kuning) */
+        /* Saya sertakan juga .alert-waning untuk berjaga-jaga jika Anda tidak mengubah typo-nya */
+        .alert-warning, .alert-waning {
+            color: #664d03;
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+        }
+
+        /* (Opsional) Danger Alert (Warna Merah) jika nanti Anda butuhkan */
+        .alert-danger {
+            color: #842029;
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+        }
+
+        /* (Opsional) Info Alert (Warna Biru) jika nanti Anda butuhkan */
+        .alert-info {
+            color: #055160;
+            background-color: #cff4fc;
+            border-color: #b6effb;
+        }
         /*
         |--------------------------------------------------------------------------
         | Responsive Table
@@ -146,9 +188,23 @@
                         Fetch Terbaru
                     </button>
 
+                    <form method="GET" action="{{ url()->current() }}" id="form-fetch-data">
+                        <input type="hidden" name="fetch_data" id="fetch_data" value="false">
+                    </form>
+
                 </div>
 
             </div>
+
+            @if ($process_status['filter']['status'])
+                <div class="alert alert-success" role="alert">
+                    {{ $process_status['filter']['msg'] }}
+                </div>
+            @elseif ($process_status['fetch_data']['status'])
+                <div class="alert alert-warning" role="alert">
+                    {{ $process_status['fetch_data']['msg'] }}
+                </div>
+            @endif
 
 
             {{-- ========================================================= --}}
@@ -726,7 +782,11 @@
                 confirmButtonColor: "#16a34a",
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.reload();
+                    // window.location.reload();
+                    const targetForm = document.querySelector('#form-fetch-data');
+                    const targetParam = document.getElementById('fetch_data');
+                    targetParam.value = true;
+                    targetForm.submit();
                 };
             });
         }
