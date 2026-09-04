@@ -41,9 +41,9 @@ return [
         'password' => env('SAGE_API_PASSWORD'),
     ],
 
-    'whs' => [
-        'url' => env('WHS_API_URL'),
-        'token' => env('WHS_API_TOKEN'),
+    'wms' => [
+        'url' => env('WMS_API_URL'),
+        'token' => env('WMS_API_TOKEN'),
     ],
 
 ];

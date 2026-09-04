@@ -423,16 +423,16 @@ class AdminController extends Controller
         ];
         $query = LogisticModel::latest();
 
-        if($request->fetch_data == 'true') {
-            $wms_data = Http::withToken(env('WMS_API_TOKEN'))->get(env('WMS_API_URL') . 'internal/logistics/active');
-            if($wms_data->successful()) {
+        if ($request->fetch_data == 'true') {
+            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . 'internal/logistics/active');
+            if ($wms_data->successful()) {
                 $data_fetching = $wms_data->json();
                 DB::beginTransaction();
                 try {
-                    foreach($data_fetching['items'] as $data) {
+                    foreach ($data_fetching['items'] as $data) {
                         // Pertama tuh Validate Store
                         $validate_store = StoresModel::where('store_name', $data['customer']['name'])->doesntExist();
-                        if($validate_store) {
+                        if ($validate_store) {
                             $token_login = Str::random(40);
                             $token_checkpoint = Str::random(40);
                             $validate_store = StoresModel::create([
@@ -451,7 +451,7 @@ class AdminController extends Controller
                         }
                         // Kedua Validate Driver
                         $validate_driver = DriversModel::where('id_driver', $data['driver']['id'])->doesntExist();
-                        if($validate_driver) {
+                        if ($validate_driver) {
                             $validate_driver = DriversModel::create([
                                 'id_driver' => $data['driver']['id'],
                                 'name' => $data['driver']['name'],
@@ -464,7 +464,7 @@ class AdminController extends Controller
                         }
                         // Ketiga Validate Vehicle
                         $validate_vehicle = VehicleModel::where('id_vehicle', $data['vehicle']['id'])->doesntExist();
-                        if($validate_vehicle) {
+                        if ($validate_vehicle) {
                             $validate_vehicle = VehicleModel::create([
                                 'id_vehicle' => $data['vehicle']['id'],
                                 'plateNo' => $data['vehicle']['plateNo'],
@@ -475,7 +475,7 @@ class AdminController extends Controller
                         }
                         // Keempat Validasi Logistic
                         $validate_logistic = LogisticModel::where('id_logistic', $data['id'])->doesntExist();
-                        if($validate_logistic) {
+                        if ($validate_logistic) {
                             $validate_logistic = LogisticModel::create([
                                 'id_logistic' => $data['id'],
                                 'shipmentId' => $data['shipmentId'],
@@ -492,8 +492,8 @@ class AdminController extends Controller
                         // Terakhir Validasi Logistic Scans
                         $validate_log_scans = LogisticScansModel::where('logistic_id', $validate_logistic->id)->doesntExist();
                         // dd($validate_log_scans);
-                        if($validate_log_scans) {
-                            foreach($data['sacks'] as $sack) {
+                        if ($validate_log_scans) {
+                            foreach ($data['sacks'] as $sack) {
                                 LogisticScansModel::create([
                                     'logistic_id' => $validate_logistic->id,
                                     'sack_id' => $sack['sackId'],
@@ -507,7 +507,7 @@ class AdminController extends Controller
                     $process_status['fetch_data']['msg'] = 'Sukses memasukkan data baru dari WMS, total ' . $data_fetching['total'] . '.';
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    $process_status['fetch_data']['msg'] = ''. $e->getMessage();
+                    $process_status['fetch_data']['msg'] = '' . $e->getMessage();
                     $process_status['fetch_data']['status'] = true;
                     // $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
                 }
