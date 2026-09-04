@@ -424,7 +424,7 @@ class AdminController extends Controller
         $query = LogisticModel::latest();
 
         if ($request->fetch_data == 'true') {
-            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . 'internal/logistics/active');
+            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . '/internal/logistics/active');
             if ($wms_data->successful()) {
                 $data_fetching = $wms_data->json();
                 DB::beginTransaction();
