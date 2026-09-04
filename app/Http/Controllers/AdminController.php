@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DriversModel;
 use App\Models\JenisMitraModel;
 use App\Models\LogisticModel;
+use App\Models\LogisticScansModel;
 use App\Models\StoresModel;
 use App\Models\VehicleModel;
 use Illuminate\Http\Request;
@@ -472,10 +473,10 @@ class AdminController extends Controller
                         } else {
                             $validate_vehicle = VehicleModel::where('id_vehicle', $data['vehicle']['id'])->latest()->first();
                         }
-                        // Terakhir Insert Logistic
+                        // Keempat Validasi Logistic
                         $validate_logistic = LogisticModel::where('id_logistic', $data['id'])->doesntExist();
                         if($validate_logistic) {
-                            $ins_logistic = LogisticModel::create([
+                            $validate_logistic = LogisticModel::create([
                                 'id_logistic' => $data['id'],
                                 'shipmentId' => $data['shipmentId'],
                                 'status' => $data['status'],
@@ -485,6 +486,20 @@ class AdminController extends Controller
                                 'vehicleId' => $validate_vehicle->id_vehicle,
                                 'departedAt' => Carbon::parse($data['departedAt'])->toDateTimeString(),
                             ]);
+                        } else {
+                            $validate_logistic = LogisticModel::where('id_logistic', $data['id'])->latest()->first();
+                        }
+                        // Terakhir Validasi Logistic Scans
+                        $validate_log_scans = LogisticScansModel::where('logistic_id', $validate_logistic->id)->doesntExist();
+                        // dd($validate_log_scans);
+                        if($validate_log_scans) {
+                            foreach($data['sacks'] as $sack) {
+                                LogisticScansModel::create([
+                                    'logistic_id' => $validate_logistic->id,
+                                    'sack_id' => $sack['sackId'],
+                                    'barcode' => $sack['barcode'],
+                                ]);
+                            }
                         }
                     }
                     DB::commit();
@@ -492,9 +507,9 @@ class AdminController extends Controller
                     $process_status['fetch_data']['msg'] = 'Sukses memasukkan data baru dari WMS, total ' . $data_fetching['total'] . '.';
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    // $process_status['fetch_data']['msg'] = ''. $e->getMessage();
+                    $process_status['fetch_data']['msg'] = ''. $e->getMessage();
                     $process_status['fetch_data']['status'] = true;
-                    $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
+                    // $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
                 }
             }
         }
