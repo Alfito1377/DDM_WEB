@@ -92,6 +92,11 @@ class AdminController extends Controller
                 'label' => 'Cancelled',
                 'color' => 'bg-red-100 text-red-800'
             ];
+        } else if ($status === 'arrived') {
+            return [
+                'label' => 'Arrived',
+                'color' => 'bg-green-100 text-green-800'
+            ];
         }
         return $status;
     }
