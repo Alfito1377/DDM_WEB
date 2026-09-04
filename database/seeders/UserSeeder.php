@@ -38,33 +38,12 @@ class UserSeeder extends Seeder
             // ],
         ]);
 
-        // 3. Buat Role, Toko Virtual, dan User untuk Pekerja Lapang
+        // 3. Buat User untuk Pekerja Lapang (Akun Dummy)
         $pekerjaLapangRoleId = DB::table('roles')->where('role_name', 'pekerja_lapang')->value('id');
-        if (!$pekerjaLapangRoleId) {
-            $pekerjaLapangRoleId = DB::table('roles')->insertGetId([
-                'role_name' => 'pekerja_lapang',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        $virtualStoreId = DB::table('stores')->where('store_name', 'Gudang Pekerja Lapang Utama')->value('id');
-        if (!$virtualStoreId) {
-            $virtualStoreId = DB::table('stores')->insertGetId([
-                'store_name' => 'Gudang Pekerja Lapang Utama',
-                'owner_name' => 'Sistem Internal',
-                'phone_number' => '00000000',
-                'address' => 'Mobile / Virtual',
-                'jenis_mitra_id' => 1,
-                'qr_token_login' => \Illuminate\Support\Str::random(40),
-                'qr_token_checkpoint' => \Illuminate\Support\Str::random(40),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        $virtualStoreId = DB::table('stores')->where('store_name', 'Operasional Lapangan')->value('id');
 
         $existUser = DB::table('users')->where('email', 'lapangan@gmail.com')->first();
-        if (!$existUser) {
+        if (!$existUser && $pekerjaLapangRoleId && $virtualStoreId) {
             DB::table('users')->insert([
                 'role_id' => $pekerjaLapangRoleId,
                 'store_id' => $virtualStoreId,

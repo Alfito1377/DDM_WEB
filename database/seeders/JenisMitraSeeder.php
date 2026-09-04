@@ -12,7 +12,7 @@ class JenisMitraSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('jenis_mitra')->insert([
+        DB::table('jenis_mitra')->insertOrIgnore([
             [
                 'nama_jenis_mitra' => 'Distributor',
                 'deskripsi' => 'Distributor Barang',
@@ -22,6 +22,12 @@ class JenisMitraSeeder extends Seeder
             [
                 'nama_jenis_mitra' => 'Toko',
                 'deskripsi' => 'Toko Retail',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nama_jenis_mitra' => 'Internal / Sistem',
+                'deskripsi' => 'Operasional Pekerja Lapangan',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
