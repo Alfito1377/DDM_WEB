@@ -429,30 +429,31 @@ class AdminController extends Controller
         $query = LogisticModel::latest();
 
         if ($request->fetch_data == 'true') {
-            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . '/internal/logistics/active');
+            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . 'internal/logistics/active');
             if ($wms_data->successful()) {
                 $data_fetching = $wms_data->json();
                 DB::beginTransaction();
                 try {
                     foreach ($data_fetching['items'] as $data) {
                         // Pertama tuh Validate Store
-                        $validate_store = StoresModel::where('store_name', $data['customer']['name'])->doesntExist();
+                        $validate_store = StoresModel::where('id_stores_wms', $data['customer']['id'])->doesntExist();
                         if ($validate_store) {
                             $token_login = Str::random(40);
                             $token_checkpoint = Str::random(40);
                             $validate_store = StoresModel::create([
+                                'id_stores_wms' => $data['customer']['id'],
                                 'jenis_mitra_id' => 2,
                                 'store_name' => $data['customer']['name'],
                                 'owner_name' => $data['customer']['name'],
                                 'phone_number' => '-',
                                 'address' => '-',
-                                'latitude' => null,
-                                'longitude' => null,
+                                'latitude' => (floatval($data['customer']['latitude']) == 0) ? null : $data['customer']['latitude'],
+                                'longitude' => (floatval($data['customer']['longitude']) == 0) ? null : $data['customer']['longitude'],
                                 'qr_token_login' => $token_login,
                                 'qr_token_checkpoint' => $token_checkpoint
                             ]);
                         } else {
-                            $validate_store = StoresModel::where('store_name', $data['customer']['name'])->latest()->first();
+                            $validate_store = StoresModel::where('id_stores_wms', $data['customer']['id'])->latest()->first();
                         }
                         // Kedua Validate Driver
                         $validate_driver = DriversModel::where('id_driver', $data['driver']['id'])->doesntExist();
@@ -484,6 +485,8 @@ class AdminController extends Controller
                             $validate_logistic = LogisticModel::create([
                                 'id_logistic' => $data['id'],
                                 'shipmentId' => $data['shipmentId'],
+                                'shipmentNumber'=> $data['shipmentNumber'],
+                                'doNumber'=> $data['doNumber'],
                                 'status' => $data['status'],
                                 'id_mitra' => $validate_store->id,
                                 'destination' => '-',
@@ -503,6 +506,10 @@ class AdminController extends Controller
                                     'logistic_id' => $validate_logistic->id,
                                     'sack_id' => $sack['sackId'],
                                     'barcode' => $sack['barcode'],
+                                    'itemCode' => $sack['itemCode'],
+                                    'itemName' => $sack['itemName'],
+                                    'weightKg' => $sack['weightKg'],
+                                    'palletCode' => $sack['palletCode'],
                                 ]);
                             }
                         }
@@ -512,9 +519,9 @@ class AdminController extends Controller
                     $process_status['fetch_data']['msg'] = 'Sukses memasukkan data baru dari WMS, total ' . $data_fetching['total'] . '.';
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    $process_status['fetch_data']['msg'] = '' . $e->getMessage();
+                    // $process_status['fetch_data']['msg'] = '' . $e->getMessage();
                     $process_status['fetch_data']['status'] = true;
-                    // $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
+                    $process_status['fetch_data']['msg'] = 'Terjadi Kesalahan saat memperbarui data dari WMS!';
                 }
             }
         }
