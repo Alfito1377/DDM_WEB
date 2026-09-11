@@ -336,7 +336,7 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
+            // 'password' => 'required|min:8',
         ]);
 
         try {
@@ -349,11 +349,16 @@ class AdminController extends Controller
                 return back()->with('error', 'Data Role atau Gudang Virtual belum disetup di database.');
             }
 
+            $pass = "sage1234";
+            if($request->password == null) {
+                $pass = $request->password;
+            }
+
             // 3. Simpan ke database
             \App\Models\User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+                'password' => \Illuminate\Support\Facades\Hash::make($pass),
                 'role_id' => $pekerjaLapangRoleId,
                 'store_id' => $virtualStoreId,
             ]);
