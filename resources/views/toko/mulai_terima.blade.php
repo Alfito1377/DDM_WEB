@@ -34,6 +34,7 @@
           $total = count($scans);
           $received = $scans->whereNotNull('received_at')->count();
           $isCompleted = $total > 0 && $total == $received;
+          $hasScannedAtLeastOne = $received > 0;
         @endphp
 
         <!-- Progress -->
@@ -42,22 +43,20 @@
             Progress Bongkar Muat
           </div>
           <div class="font-bold text-gray-800 text-base sm:text-lg flex items-center gap-1.5 flex-wrap">
-            <span>{{ $received }}</span>
+            <span id="received-counter">{{ $received }}</span>
             <span class="text-gray-400 font-normal text-xs sm:text-sm">dari</span>
-            <span>{{ $total }}</span>
+            <span id="total-counter">{{ $total }}</span>
             <span class="text-gray-400 font-normal text-xs sm:text-sm">barang</span>
             
-            @if($isCompleted)
-              <svg class="w-5 h-5 text-green-500 ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            @endif
+            <svg id="completed-badge-icon" class="w-5 h-5 text-green-500 ml-1 flex-shrink-0 {{ $isCompleted ? '' : 'hidden' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
           </div>
 
           <!-- Progress Bar -->
           @if($total > 0)
             <div class="w-full lg:w-48 h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden">
-              <div class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: {{ ($received / $total) * 100 }}%"></div>
+              <div id="progress-bar-fill" class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: {{ ($received / $total) * 100 }}%"></div>
             </div>
           @endif
         </div>
@@ -125,26 +124,42 @@
           <div class="w-full">
             <div class="bg-gray-50 rounded-2xl border border-gray-200 p-4 sm:p-5">
               <!-- Header Checklist -->
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0"></path>
-                  </svg>
-                  <span>Manifes Pengiriman</span>
-                </h3>
-                <span class="text-[10px] sm:text-xs font-bold bg-white border border-gray-200 px-2 py-1 rounded-lg text-gray-500">
-                  {{ $received }}/{{ $total }}
-                </span>
+              <div class="flex items-center justify-between gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a3 3 0 006 0"></path>
+                    </svg>
+                    <span>Manifes Pengiriman</span>
+                  </h3>
+                  <span id="checklist-badge" class="text-[10px] sm:text-xs font-bold bg-white border border-gray-200 px-2 py-1 rounded-lg text-gray-500">
+                    {{ $received }}/{{ $total }}
+                  </span>
+                </div>
+
+                @if(!$isCompleted)
+                  <button type="button" id="btn-terima-semua-top" onclick="konfirmasiTerimaSemuaLangsung()" class="{{ $hasScannedAtLeastOne ? '' : 'hidden' }} bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="hidden sm:inline">Terima Semua Sekaligus</span>
+                    <span class="sm:hidden">Terima Semua</span>
+                  </button>
+                @endif
+              </div>
+
+              <!-- Notifikasi Wajib Scan Minimal 1 Barcode -->
+              <div id="scan-required-notice" class="{{ $hasScannedAtLeastOne ? 'hidden' : '' }} mb-3 p-3 bg-amber-50/90 border border-amber-200/80 rounded-xl flex items-center gap-2.5 text-amber-800 text-xs">
+                <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <span>Scan minimal 1 barcode produk fisik untuk memverifikasi dan membuka opsi centang manifes.</span>
               </div>
 
               <!-- Checklist -->
-              <div class="space-y-2 max-h-[420px] sm:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+              <div id="manifest-items-list" class="space-y-2 max-h-[420px] sm:max-h-[500px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                 @foreach($scans as $item)
                   @if($item->received_at != null)
                     <!-- SUDAH DITERIMA -->
-                    <div class="bg-white p-3 rounded-xl border border-green-200 shadow-sm flex items-center justify-between gap-3 opacity-75">
+                    <div id="item-row-{{ $item->id }}" data-barcode="{{ $item->barcode }}" class="manifest-item is-received bg-white p-3 rounded-xl border border-green-200 shadow-sm flex items-center justify-between gap-3 opacity-80 transition-all duration-300">
                       <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <div class="status-icon w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                           </svg>
@@ -153,22 +168,25 @@
                           <p class="text-xs sm:text-sm text-gray-800 font-bold mb-0.5 truncate">
                             {{ $item->barcode }}
                           </p>
-                          <p class="text-[9px] sm:text-[10px] text-gray-500">
+                          @if($item->itemName)
+                            <span class="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] px-2 py-0.5 rounded font-mono mr-1">
+                              {{ $item->itemName }}
+                            </span>
+                          @endif
+                          <p class="status-text text-[9px] sm:text-[10px] text-gray-500">
                             Diterima: {{ \Carbon\Carbon::parse($item->received_at)->format('H:i:s') }}
                           </p>
                         </div>
                       </div>
-                      @if($item->barcode)
-                        <span class="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] px-2 py-1 rounded font-mono flex-shrink-0">
-                          {{ $item->barcode }}
-                        </span>
-                      @endif
+                      <span class="text-green-600 text-[10px] font-bold px-2 py-1 bg-green-50 rounded-lg border border-green-200 flex-shrink-0">
+                        ✓ Terverifikasi
+                      </span>
                     </div>
                   @else
                     <!-- BELUM DITERIMA -->
-                    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-3">
+                    <div id="item-row-{{ $item->id }}" data-barcode="{{ $item->barcode }}" class="manifest-item bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between gap-3 transition-all duration-300">
                       <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center flex-shrink-0">
+                        <div class="status-icon w-8 h-8 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center flex-shrink-0">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
@@ -178,15 +196,19 @@
                             {{ $item->barcode }}
                           </p>
                           @if($item->itemName)
-                            <span class="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] px-2 py-1 rounded font-mono flex-shrink-0">
+                            <span class="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] px-2 py-0.5 rounded font-mono mr-1">
                               {{ $item->itemName }}
                             </span>
                           @endif
-                          <p class="text-[9px] sm:text-[10px] text-amber-600 font-semibold py-1">
+                          <p class="status-text text-[9px] sm:text-[10px] text-amber-600 font-semibold py-0.5">
                             Menunggu Scan...
                           </p>
                         </div>
                       </div>
+                      <button type="button" onclick="centangManual('{{ $item->barcode }}')" class="btn-centang-manual {{ $hasScannedAtLeastOne ? '' : 'hidden' }} bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 px-2.5 py-1.5 rounded-lg transition text-xs font-semibold flex items-center gap-1 border border-gray-200 hover:border-green-300 flex-shrink-0" title="Centang Manual">
+                        <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span class="text-[10px] font-bold">Centang</span>
+                      </button>
                     </div>
                   @endif
                 @endforeach
@@ -201,33 +223,188 @@
 
   <style>
     /* =========================================
-       HTML5 QR SCANNER
+       HTML5 QR SCANNER — BASE
        ========================================= */
     #qr-reader {
       border: none !important;
       width: 100% !important;
+      font-family: inherit !important;
     }
-    #qr-reader__dashboard_section_csr span {
-      font-size: 12px;
+
+    /* Sembunyikan header bawaan library */
+    #qr-reader > img,
+    #qr-reader__header_message {
+      display: none !important;
     }
-    #qr-reader__dashboard_section_csr button {
-      background: #10b981;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+
+    /* Area scan region */
     #qr-reader__scan_region {
-      background: #f9fafb;
+      background: #111827 !important;
+      border-radius: 0 !important;
     }
-    /* Agar video tidak keluar container */
+
+    /* Sembunyikan frame/overlay putih bawaan library */
+    #qr-reader__scan_region > img,
+    #qr-reader__scan_region > div[style*="border"],
+    #qr-shaded-region,
+    #qr-reader__scan_region canvas {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Video selalu full container */
     #qr-reader video {
       width: 100% !important;
       height: 100% !important;
       object-fit: cover !important;
+    }
+
+    /* =========================================
+       DASHBOARD (area bawah kamera)
+       ========================================= */
+    #qr-reader__dashboard {
+      background: transparent !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+
+    #qr-reader__dashboard_section {
+      padding: 0 !important;
+    }
+
+    /* =========================================
+       TOMBOL IZIN KAMERA (Request Camera Permission)
+       ========================================= */
+    #qr-reader__camera_permission_button {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 16px 0 8px 0 !important;
+      padding: 14px 20px !important;
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 14px !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      font-family: inherit !important;
+      cursor: pointer !important;
+      letter-spacing: 0.01em !important;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+      transition: all 0.2s ease !important;
+      text-align: center !important;
+    }
+    #qr-reader__camera_permission_button:hover {
+      background: linear-gradient(135deg, #059669, #047857) !important;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+      transform: translateY(-1px) !important;
+    }
+    #qr-reader__camera_permission_button:active {
+      transform: translateY(0) !important;
+    }
+
+    /* =========================================
+       DROPDOWN SELECT KAMERA
+       ========================================= */
+    #qr-reader__camera_selection,
+    #qr-reader select,
+    #qr-reader__dashboard select {
+      display: block !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      margin: 12px 0 !important;
+      padding: 14px 16px !important;
+      background: #f8fafc !important;
+      color: #1e293b !important;
+      border: 2px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      font-family: inherit !important;
+      cursor: pointer !important;
+      appearance: auto !important;
+      -webkit-appearance: menulist !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+      transition: border-color 0.2s !important;
+      height: auto !important;
+      line-height: 1.4 !important;
+    }
+    #qr-reader__camera_selection:focus,
+    #qr-reader select:focus {
+      outline: none !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    /* Label "Select Camera" di atas select */
+    #qr-reader__dashboard_section_csr span,
+    #qr-reader__dashboard_section_csr label {
+      display: block !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      color: #64748b !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+      margin-bottom: 6px !important;
+    }
+
+    /* =========================================
+       TOMBOL START / STOP SCANNING
+       ========================================= */
+    #qr-reader__dashboard_section_csr button,
+    #qr-reader__dashboard_section_swaplink {
+      display: block !important;
+      width: 100% !important;
+      margin: 10px 0 !important;
+      padding: 13px 20px !important;
+      background: linear-gradient(135deg, #1e293b, #334155) !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 12px !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      font-family: inherit !important;
+      cursor: pointer !important;
+      text-align: center !important;
+      box-shadow: 0 3px 10px rgba(30, 41, 59, 0.25) !important;
+      transition: all 0.2s ease !important;
+      text-decoration: none !important;
+    }
+    #qr-reader__dashboard_section_csr button:hover,
+    #qr-reader__dashboard_section_swaplink:hover {
+      background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+      box-shadow: 0 5px 16px rgba(30, 41, 59, 0.35) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    /* Tombol Stop berwarna merah */
+    #qr-reader__dashboard_section_csr button[id*="stop"],
+    #qr-reader__stop_button {
+      background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25) !important;
+    }
+    #qr-reader__dashboard_section_csr button[id*="stop"]:hover {
+      background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    }
+
+    /* Sembunyikan link "Or enter image URL" atau sejenisnya */
+    #qr-reader__dashboard_section_fsr,
+    #qr-reader__filescan_input {
+      display: none !important;
+    }
+
+    /* =========================================
+       STATUS TEXT KAMERA
+       ========================================= */
+    #qr-reader__status_span {
+      display: block !important;
+      font-size: 11px !important;
+      color: #94a3b8 !important;
+      font-weight: 500 !important;
+      text-align: center !important;
+      margin: 4px 0 8px 0 !important;
     }
 
     /* =========================================
@@ -252,14 +429,16 @@
        MOBILE
        ========================================= */
     @media (max-width: 640px) {
-      #qr-reader__dashboard {
-        padding: 6px !important;
-      }
-      #qr-reader__dashboard_section_csr {
-        margin-top: 5px !important;
-      }
       #qr-reader__scan_region {
         min-height: 220px;
+      }
+      #qr-reader__camera_permission_button {
+        font-size: 14px !important;
+        padding: 12px 16px !important;
+      }
+      #qr-reader__dashboard_section_csr button {
+        font-size: 13px !important;
+        padding: 12px 16px !important;
       }
     }
 
@@ -275,36 +454,161 @@
 
   @if(!$isCompleted)
     <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        let isScanning = false;
+      // =========================================
+      // AUDIO SYNTHESIS FEEDBACK (Web Audio API)
+      // =========================================
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      let audioCtx = null;
 
-        const html5QrcodeScanner = new Html5QrcodeScanner(
+      function getAudioContext() {
+        if (!audioCtx && AudioContext) {
+          audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return audioCtx;
+      }
+
+      function playAudioSuccess() {
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+        } catch (e) {
+          console.warn("Audio success error:", e);
+        }
+      }
+
+      function playAudioWarning() {
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(320, ctx.currentTime);
+          osc.frequency.setValueAtTime(240, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } catch (e) {
+          console.warn("Audio warning error:", e);
+        }
+      }
+
+      // =========================================
+      // SWEETALERT TOAST
+      // =========================================
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      });
+
+      let processScan = null;
+      let prosesTerimaSatu = null;
+      let prosesTerimaSemua = null;
+      let html5QrcodeScanner = null;
+
+      function getUnreceivedCount() {
+        return document.querySelectorAll('.manifest-item:not(.is-received)').length;
+      }
+
+      function unlockChecklistActions() {
+        const topBtn = document.getElementById('btn-terima-semua-top');
+        if (topBtn) topBtn.classList.remove('hidden');
+
+        document.querySelectorAll('.btn-centang-manual').forEach(btn => {
+          btn.classList.remove('hidden');
+        });
+
+        const notice = document.getElementById('scan-required-notice');
+        if (notice) notice.classList.add('hidden');
+      }
+
+      // =========================================
+      // CENTANG MANUAL (GLOBAL PER ITEM)
+      // =========================================
+      window.centangManual = function(barcode) {
+        Swal.fire({
+          title: 'Centang Manual',
+          text: 'Tandai barang "' + barcode + '" sebagai diterima?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'Ya, Tandai Diterima',
+          cancelButtonText: 'Batal'
+        }).then((res) => {
+          if (res.isConfirmed && typeof prosesTerimaSatu === 'function') {
+            prosesTerimaSatu(barcode);
+          }
+        });
+      };
+
+      // =========================================
+      // TERIMA SEMUA LANGSUNG (TOMBOL HEADER)
+      // =========================================
+      window.konfirmasiTerimaSemuaLangsung = function() {
+        const unreceivedCount = getUnreceivedCount();
+        if (unreceivedCount === 0) {
+          Toast.fire({ icon: 'info', title: 'Semua barang sudah diterima.' });
+          return;
+        }
+
+        Swal.fire({
+          icon: 'question',
+          title: 'Terima Semua Barang Sekaligus?',
+          html: `Terdapat <b>${unreceivedCount}</b> barang yang belum diterima.<br>Apakah Anda yakin ingin menandai seluruh barang sebagai diterima sekarang?`,
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Terima Semua',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#6b7280'
+        }).then((res) => {
+          if (res.isConfirmed && typeof prosesTerimaSemua === 'function') {
+            prosesTerimaSemua('');
+          }
+        });
+      };
+
+      document.addEventListener('DOMContentLoaded', function () {
+        let lastScannedCode = null;
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN_MS = 1500;
+        let isProcessingAjax = false;
+
+        html5QrcodeScanner = new Html5QrcodeScanner(
           "qr-reader",
           {
             fps: 10,
             rememberLastUsedCamera: false,
-            qrbox: function (viewfinderWidth, viewfinderHeight) {
-              /*
-               * Ukuran kotak scanner menyesuaikan layar.
-               * HP -> lebih kecil
-               * Tablet/Desktop -> lebih besar
-               */
-              let width = Math.min(viewfinderWidth * 0.80, 300);
-              let height = Math.min(viewfinderHeight * 0.35, 150);
-              return {
-                width: Math.floor(width),
-                height: Math.floor(height)
-              };
-            },
+
             formatsToSupport: [
               Html5QrcodeSupportedFormats.QR_CODE,
-              // Html5QrcodeSupportedFormats.CODE_128,
-              // Html5QrcodeSupportedFormats.CODE_39,
-              // Html5QrcodeSupportedFormats.EAN_13,
-              // Html5QrcodeSupportedFormats.EAN_8,
-              // Html5QrcodeSupportedFormats.UPC_A,
-              // Html5QrcodeSupportedFormats.UPC_E,
-              // Html5QrcodeSupportedFormats.ITF,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.ITF
             ]
           },
           false
@@ -316,7 +620,6 @@
         function logDebug(message, type = 'info') {
           const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
           const logMessage = `[${time}] Scanner: ${message}`;
-          
           if (type === 'error') {
             console.error(logMessage);
           } else if (type === 'warn') {
@@ -327,31 +630,219 @@
         }
 
         /* =========================================
-           PROCESS SCAN
+           UPDATE DOM CHECKLIST & PROGRESS
            ========================================= */
-        function processScan(scannedCode) {
-          scannedCode = String(scannedCode).trim();
-          logDebug(`Processing code: ${scannedCode}`);
+        function updateItemInChecklist(data) {
+          const barcode = data.barcode;
+          const scanId = data.scan_id;
+          const scannedAt = data.scanned_at || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const receivedCount = data.received_count;
+          const totalCount = data.total_count;
+          const isCompleted = data.is_completed;
 
-          if (isScanning) {
-            logDebug('Skipped, still processing previous scan.', 'warn');
-            return;
+          // Cari baris item berdasarkan ID scan terlebih dahulu, atau barcode yang belum diterima
+          let row = document.getElementById('item-row-' + scanId);
+          if (!row) {
+            const rows = document.querySelectorAll(`.manifest-item[data-barcode="${barcode}"]`);
+            for (let r of rows) {
+              if (!r.classList.contains('is-received')) {
+                row = r;
+                break;
+              }
+            }
           }
 
-          if (!scannedCode) {
-            return;
+          if (row) {
+            row.classList.add('is-received', 'opacity-80', 'border-green-200');
+            row.classList.remove('border-gray-200');
+
+            // Update icon status
+            const iconContainer = row.querySelector('.status-icon');
+            if (iconContainer) {
+              iconContainer.className = 'status-icon w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0';
+              iconContainer.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            }
+
+            // Update teks status
+            const statusText = row.querySelector('.status-text');
+            if (statusText) {
+              statusText.className = 'status-text text-[9px] sm:text-[10px] text-gray-500';
+              statusText.textContent = 'Diterima: ' + scannedAt;
+            }
+
+            // Ganti tombol centang manual menjadi badge terverifikasi
+            const manualBtn = row.querySelector('.btn-centang-manual');
+            if (manualBtn) {
+              const badge = document.createElement('span');
+              badge.className = 'text-green-600 text-[10px] font-bold px-2 py-1 bg-green-50 rounded-lg border border-green-200 flex-shrink-0';
+              badge.textContent = '✓ Terverifikasi';
+              manualBtn.replaceWith(badge);
+            }
+
+            // Efek highlight baris
+            row.classList.add('bg-green-50');
+            setTimeout(() => row.classList.remove('bg-green-50'), 1500);
+
+            // Pindahkan baris yang sudah diterima ke atas daftar agar rapi
+            const listContainer = document.getElementById('manifest-items-list');
+            if (listContainer && listContainer.firstChild) {
+              listContainer.insertBefore(row, listContainer.firstChild);
+            }
           }
 
-          isScanning = true;
+          // Update Counter & Progress Bar
+          if (receivedCount !== undefined && totalCount !== undefined) {
+            const receivedEl = document.getElementById('received-counter');
+            const totalEl = document.getElementById('total-counter');
+            const badgeEl = document.getElementById('checklist-badge');
+            const progressFill = document.getElementById('progress-bar-fill');
+
+            if (receivedEl) receivedEl.textContent = receivedCount;
+            if (totalEl) totalEl.textContent = totalCount;
+            if (badgeEl) badgeEl.textContent = `${receivedCount}/${totalCount}`;
+            if (progressFill && totalCount > 0) {
+              progressFill.style.width = ((receivedCount / totalCount) * 100) + '%';
+            }
+          }
+
+          // Buka aksi centang karena minimal 1 scan telah berhasil
+          unlockChecklistActions();
+
+          // Jika semua barang telah diterima
+          if (isCompleted) {
+            handleAllCompleted();
+          }
+        }
+
+        /* =========================================
+           HANDLE ALL COMPLETED
+           ========================================= */
+        function handleAllCompleted() {
+          const badgeIcon = document.getElementById('completed-badge-icon');
+          if (badgeIcon) badgeIcon.classList.remove('hidden');
+
+          const topBtn = document.getElementById('btn-terima-semua-top');
+          if (topBtn) topBtn.style.display = 'none';
+
+          if (html5QrcodeScanner) {
+            try {
+              html5QrcodeScanner.clear();
+            } catch (e) {}
+          }
 
           Swal.fire({
-            title: 'Mencocokkan...',
-            text: 'Memverifikasi barcode: ' + scannedCode,
+            icon: 'success',
+            title: 'Semua Barang Telah Diterima!',
+            text: 'Seluruh barang dalam pengiriman ini telah lengkap diverifikasi.',
+            confirmButtonText: 'Kembali ke Daftar Pengiriman',
+            confirmButtonColor: '#10b981',
+            allowOutsideClick: false
+          }).then(() => {
+            window.location.href = "{{ url('/toko/penerimaan') }}";
+          });
+        }
+
+        /* =========================================
+           PROSES TERIMA SEMUA BARANG (BATCH)
+           ========================================= */
+        prosesTerimaSemua = function(sampleBarcode) {
+          isProcessingAjax = true;
+
+          Swal.fire({
+            title: 'Menerima Semua Barang...',
+            text: 'Sedang memproses seluruh manifes dan stok toko...',
             allowOutsideClick: false,
             didOpen: () => {
               Swal.showLoading();
             }
           });
+
+          fetch('{{ url('/toko/penerimaan/terima-semua') }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              barcode: sampleBarcode || '',
+              logistic_id: '{{ $logistic->id_logistic }}'
+            })
+          })
+          .then(res => res.json().then(data => ({ status: res.status, body: data })))
+          .then(result => {
+            isProcessingAjax = false;
+            Swal.close();
+
+            if (result.status === 200 && result.body.status === 'success') {
+              playAudioSuccess();
+
+              // Ubah SEMUA item checklist menjadi centang hijau
+              const unreceivedRows = document.querySelectorAll('.manifest-item:not(.is-received)');
+              const scannedAt = result.body.data.scanned_at;
+              unreceivedRows.forEach(row => {
+                row.classList.add('is-received', 'opacity-80', 'border-green-200');
+                row.classList.remove('border-gray-200');
+
+                const icon = row.querySelector('.status-icon');
+                if (icon) {
+                  icon.className = 'status-icon w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0';
+                  icon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                }
+
+                const statusText = row.querySelector('.status-text');
+                if (statusText) {
+                  statusText.className = 'status-text text-[9px] sm:text-[10px] text-gray-500';
+                  statusText.textContent = 'Diterima: ' + scannedAt;
+                }
+
+                const manualBtn = row.querySelector('.btn-centang-manual');
+                if (manualBtn) {
+                  const badge = document.createElement('span');
+                  badge.className = 'text-green-600 text-[10px] font-bold px-2 py-1 bg-green-50 rounded-lg border border-green-200 flex-shrink-0';
+                  badge.textContent = '✓ Terverifikasi';
+                  manualBtn.replaceWith(badge);
+                }
+              });
+
+              // Update counter & progress bar ke 100%
+              const total = result.body.data.total_count;
+              const receivedEl = document.getElementById('received-counter');
+              const totalEl = document.getElementById('total-counter');
+              const badgeEl = document.getElementById('checklist-badge');
+              const progressFill = document.getElementById('progress-bar-fill');
+
+              if (receivedEl) receivedEl.textContent = total;
+              if (totalEl) totalEl.textContent = total;
+              if (badgeEl) badgeEl.textContent = `${total}/${total}`;
+              if (progressFill) progressFill.style.width = '100%';
+
+              handleAllCompleted();
+            } else {
+              playAudioWarning();
+              Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: result.body.message || 'Terjadi kesalahan sistem.'
+              });
+            }
+          })
+          .catch(err => {
+            isProcessingAjax = false;
+            console.error("Terima semua error:", err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error Jaringan',
+              text: 'Terjadi kesalahan saat menghubungi server.'
+            });
+          });
+        };
+
+        /* =========================================
+           PROSES TERIMA 1 BARANG (SINGLE)
+           ========================================= */
+        prosesTerimaSatu = function(scannedCode) {
+          isProcessingAjax = true;
 
           fetch('{{ url('/toko/penerimaan/scan') }}', {
             method: 'POST',
@@ -370,60 +861,137 @@
             body: data
           })))
           .then(result => {
-            isScanning = false;
+            isProcessingAjax = false;
 
             if (result.status === 200 || result.status === 201 || result.body.status === 'success') {
-              logDebug(`Server Response: Success - ${result.body.message}`);
-              Swal.fire({
+              playAudioSuccess();
+              Toast.fire({
                 icon: 'success',
-                title: 'Diterima!',
-                text: result.body.message,
-                timer: 1500,
-                showConfirmButton: false
-              }).then(() => {
-                window.location.reload();
+                title: 'Diterima: ' + scannedCode
               });
+
+              updateItemInChecklist(result.body.data);
+
             } else if (result.status === 400 || result.body.status === 'warning') {
-              logDebug(`Server Response: Warning - ${result.body.message}`, 'warn');
-              Swal.fire({
+              playAudioWarning();
+              Toast.fire({
                 icon: 'warning',
-                title: 'Sudah Diterima',
-                text: result.body.message
+                title: result.body.message || 'Sudah Diterima'
               });
             } else {
-              logDebug(`Server Response: Error - ${result.body.message}`, 'error');
-              Swal.fire({
+              playAudioWarning();
+              Toast.fire({
                 icon: 'error',
-                title: 'Ditolak',
-                text: result.body.message
+                title: result.body.message || 'Ditolak: Tidak ada di manifes'
               });
             }
           })
           .catch(error => {
-            isScanning = false;
+            isProcessingAjax = false;
+            playAudioWarning();
             logDebug(`Fetch Error: ${error.message}`, 'error');
-            Swal.fire({
+            Toast.fire({
               icon: 'error',
-              title: 'Error Jaringan',
-              text: 'Terjadi kesalahan saat menghubungi server.'
+              title: 'Kesalahan jaringan saat verifikasi'
             });
           });
-        }
+        };
 
         /* =========================================
-           SCAN SUCCESS
+           SCAN HANDLER UTAMA (OPSI A: KONFIRMASI)
+           ========================================= */
+        processScan = function(scannedCode, isManual = false) {
+          scannedCode = String(scannedCode).trim();
+          if (!scannedCode) return;
+
+          const now = Date.now();
+          if (!isManual && scannedCode === lastScannedCode && (now - lastScanTime < SCAN_COOLDOWN_MS)) {
+            return;
+          }
+
+          if (isProcessingAjax) {
+            logDebug('Sedang memproses scan sebelumnya...', 'warn');
+            return;
+          }
+
+          lastScannedCode = scannedCode;
+          lastScanTime = now;
+
+          // Efek visual scanner
+          const scanContainer = document.getElementById('qr-reader');
+          if (scanContainer) {
+            scanContainer.classList.add('ring-4', 'ring-emerald-400');
+            setTimeout(() => scanContainer.classList.remove('ring-4', 'ring-emerald-400'), 350);
+          }
+
+          // Cek keberadaan di manifes
+          const matchingUnreceived = document.querySelector(`.manifest-item:not(.is-received)[data-barcode="${scannedCode}"]`);
+          const matchingReceived = document.querySelector(`.manifest-item.is-received[data-barcode="${scannedCode}"]`);
+          const unreceivedCount = getUnreceivedCount();
+
+          if (!matchingUnreceived) {
+            if (matchingReceived) {
+              playAudioWarning();
+              Toast.fire({ icon: 'warning', title: 'Semua barang dengan barcode ini sudah diterima!' });
+            } else {
+              playAudioWarning();
+              Toast.fire({ icon: 'error', title: 'Barcode ' + scannedCode + ' tidak ada di manifes ini!' });
+            }
+            return;
+          }
+
+          // Jika ada lebih dari 1 barang yang belum diterima -> Munculkan Dialog Opsi A
+          if (unreceivedCount > 1) {
+            isProcessingAjax = true;
+            playAudioSuccess();
+
+            Swal.fire({
+              icon: 'question',
+              title: 'Konfirmasi Penerimaan Barang',
+              html: `Barcode <b>"${scannedCode}"</b> cocok dengan pengiriman ini!<br>Terdapat <b>${unreceivedCount}</b> barang yang belum diterima.<br><br>Terima semua barang dalam pengiriman ini sekaligus?`,
+              showCancelButton: true,
+              showDenyButton: true,
+              confirmButtonText: 'Ya, Terima Semua Barang',
+              denyButtonText: 'Tidak, lakukan cek secara manual',
+              cancelButtonText: 'Batal',
+              confirmButtonColor: '#10b981',
+              denyButtonColor: '#4b5563',
+              cancelButtonColor: '#9ca3af',
+              allowOutsideClick: false
+            }).then((result) => {
+              isProcessingAjax = false;
+
+              if (result.isConfirmed) {
+                prosesTerimaSemua(scannedCode);
+              } else if (result.isDenied) {
+                // Proses 1 barcode sampel ini saja, sisa barang tetap belum diterima
+                prosesTerimaSatu(scannedCode);
+                unlockChecklistActions();
+                Toast.fire({
+                  icon: 'info',
+                  title: '1 barang diterima. Opsi centang checklist telah dibuka.'
+                });
+              }
+            });
+          } else {
+            // Hanya ada 1 barang tersisa, langsung proses terima
+            prosesTerimaSatu(scannedCode);
+          }
+        };
+
+        /* =========================================
+           SCAN SUCCESS HANDLER
            ========================================= */
         function onScanSuccess(decodedText, decodedResult) {
-          logDebug(`Scan Success! Captured: ${decodedText}`);
-          processScan(decodedText);
+          logDebug(`Scan captured: ${decodedText}`);
+          processScan(decodedText, false);
         }
 
         /* =========================================
-           SCAN FAILURE
+           SCAN FAILURE HANDLER
            ========================================= */
         function onScanFailure(error) {
-          // Jangan console.log karena fungsi ini
-          // dipanggil berkali-kali ketika kamera mencari barcode.
+          // Diamkan logging failure frame scanner
         }
 
         /* =========================================
@@ -442,20 +1010,112 @@
         }, 1000);
 
         /* =========================================
-           MANUAL SCAN
+           MUTATION OBSERVER — PAKSA STYLE ELEMEN LIBRARY
+           ========================================= */
+        function applyForcedScannerStyles() {
+          // Paksa style semua <select> dalam qr-reader
+          document.querySelectorAll('#qr-reader select, #qr-reader__camera_selection').forEach(el => {
+            el.style.cssText = [
+              'display: block',
+              'width: 100%',
+              'min-width: 0',
+              'box-sizing: border-box',
+              'margin: 12px 0',
+              'padding: 14px 16px',
+              'background: #f8fafc',
+              'color: #1e293b',
+              'border: 2px solid #e2e8f0',
+              'border-radius: 12px',
+              'font-size: 15px',
+              'font-weight: 600',
+              'font-family: inherit',
+              'cursor: pointer',
+              'height: auto',
+              'line-height: 1.4',
+              'box-shadow: 0 1px 4px rgba(0,0,0,0.06)',
+              'transition: border-color 0.2s'
+            ].join(' !important; ') + ' !important';
+          });
+
+          // Paksa style camera permission button
+          const permBtn = document.getElementById('qr-reader__camera_permission_button');
+          if (permBtn) {
+            permBtn.style.cssText = [
+              'display: block',
+              'width: 100%',
+              'box-sizing: border-box',
+              'margin: 16px 0 8px 0',
+              'padding: 14px 20px',
+              'background: linear-gradient(135deg, #10b981, #059669)',
+              'color: #ffffff',
+              'border: none',
+              'border-radius: 14px',
+              'font-size: 15px',
+              'font-weight: 700',
+              'font-family: inherit',
+              'cursor: pointer',
+              'text-align: center',
+              'box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35)'
+            ].join(' !important; ') + ' !important';
+          }
+
+          // Paksa style semua button dalam dashboard (kecuali yg sudah di-handle)
+          document.querySelectorAll('#qr-reader__dashboard button').forEach(btn => {
+            if (btn.id === 'qr-reader__camera_permission_button') return;
+            const isStop = btn.textContent.toLowerCase().includes('stop');
+            const bg = isStop
+              ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+              : 'linear-gradient(135deg, #1e293b, #334155)';
+            btn.style.cssText = [
+              'display: block',
+              'width: 100%',
+              'box-sizing: border-box',
+              'margin: 10px 0',
+              'padding: 13px 20px',
+              `background: ${bg}`,
+              'color: #ffffff',
+              'border: none',
+              'border-radius: 12px',
+              'font-size: 14px',
+              'font-weight: 700',
+              'font-family: inherit',
+              'cursor: pointer',
+              'text-align: center',
+              'box-shadow: 0 3px 10px rgba(30, 41, 59, 0.25)'
+            ].join(' !important; ') + ' !important';
+          });
+        }
+
+        // Jalankan observer untuk mendeteksi perubahan DOM library
+        const qrReaderEl = document.getElementById('qr-reader');
+        if (qrReaderEl) {
+          const observer = new MutationObserver(() => {
+            applyForcedScannerStyles();
+          });
+          observer.observe(qrReaderEl, { childList: true, subtree: true });
+          // Jalankan sekali langsung
+          applyForcedScannerStyles();
+          // Dan 500ms setelah render selesai
+          setTimeout(applyForcedScannerStyles, 500);
+          setTimeout(applyForcedScannerStyles, 1500);
+        }
+
+        /* =========================================
+           MANUAL INPUT FORM
            ========================================= */
         const manualForm = document.getElementById('manual-scan-form');
         const manualInput = document.getElementById('manual-resi');
 
-        manualForm.addEventListener('submit', function (e) {
-          e.preventDefault();
-          const input = manualInput.value.trim();
-          
-          if (input !== '') {
-            processScan(input);
-            manualInput.value = '';
-          }
-        });
+        if (manualForm) {
+          manualForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const input = manualInput.value.trim();
+            if (input !== '') {
+              processScan(input, true);
+              manualInput.value = '';
+            }
+          });
+        }
       });
     </script>
   @endif

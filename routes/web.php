@@ -133,6 +133,7 @@ Route::middleware(['auth', 'role:toko'])->prefix('toko')->group(function () {
     Route::get('/penerimaan', [ReturnController::class, 'penerimaan']);
     Route::get('/penerimaan/mulai/{logistic_id}', [ReturnController::class, 'mulaiTerima']);
     Route::post('/penerimaan/scan', [ReturnController::class, 'scanPenerimaan']);
+    Route::post('/penerimaan/terima-semua', [ReturnController::class, 'terimaSemuaBarang']);
 
     Route::post('/retur', [ReturnController::class, 'store']);
     Route::get('/retur/{id}/cetak', [ReturnController::class, 'printSuratJalan']);

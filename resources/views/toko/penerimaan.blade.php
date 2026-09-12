@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <div class="space-y-4 sm:space-y-6">
 
         @php

@@ -680,10 +680,128 @@ class ReturnController extends Controller
             'status' => 'success',
             'message' => 'Berhasil! 1x Barcode ' . $barcode . ' diterima.',
             'data' => [
+                'scan_id' => $scanRecord->id,
                 'barcode' => $barcode,
-                'scanned_at' => now()->format('H:i')
+                'scanned_at' => now()->format('H:i:s'),
+                'received_count' => $receivedItems,
+                'total_count' => $totalItems,
+                'is_completed' => ($totalItems > 0 && $totalItems == $receivedItems)
             ]
         ]);
+    }
+
+    /**
+     * Terima Semua Barang Sekaligus dalam Suatu Pengiriman Logistik
+     */
+    public function terimaSemuaBarang(Request $request)
+    {
+        $request->validate([
+            'logistic_id' => 'required|string',
+            'barcode' => 'nullable|string',
+        ]);
+
+        $storeId = Auth::user()->store_id;
+        $logisticIdStr = $request->logistic_id;
+
+        // Validasi pengiriman milik toko ini
+        $logistic = DB::table('logistic')
+            ->where('id_mitra', $storeId)
+            ->where('id_logistic', $logisticIdStr)
+            ->first();
+
+        if (!$logistic) {
+            return response()->json(['status' => 'error', 'message' => 'Pengiriman tidak ditemukan atau akses ditolak.'], 403);
+        }
+
+        // Ambil semua barang yang belum diterima
+        $unreceived = DB::table('logistic_scans')
+            ->where('logistic_id', $logistic->id)
+            ->whereNull('received_at')
+            ->get();
+
+        if ($unreceived->isEmpty()) {
+            return response()->json([
+                'status' => 'warning',
+                'message' => 'Semua barang dalam pengiriman ini sudah diterima sebelumnya.'
+            ]);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $now = now();
+
+            // 1. Update stok toko per barcode secara borongan
+            $grouped = $unreceived->groupBy('barcode');
+            foreach ($grouped as $barcode => $items) {
+                $qty = $items->count();
+
+                $existing = DB::table('store_stocks')
+                    ->where('store_id', $storeId)
+                    ->where('barcode', $barcode)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing) {
+                    DB::table('store_stocks')->where('id', $existing->id)->increment('quantity', $qty);
+                } else {
+                    DB::table('store_stocks')->insert([
+                        'store_id' => $storeId,
+                        'barcode' => $barcode,
+                        'quantity' => $qty,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                }
+
+                DB::table('store_stock_logs')->insert([
+                    'store_id' => $storeId,
+                    'barcode' => $barcode,
+                    'type' => 'in',
+                    'quantity' => $qty,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            // 2. Tandai semua item sebagai diterima
+            DB::table('logistic_scans')
+                ->where('logistic_id', $logistic->id)
+                ->whereNull('received_at')
+                ->update([
+                    'received_at' => $now,
+                    'updated_at' => $now
+                ]);
+
+            // 3. Update status logistik menjadi completed
+            DB::table('logistic')->where('id', $logistic->id)->update([
+                'status' => 'completed',
+                'arrivedAt' => $now,
+                'updated_at' => $now
+            ]);
+
+            DB::commit();
+
+            $totalCount = DB::table('logistic_scans')->where('logistic_id', $logistic->id)->count();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil! Seluruh ' . $unreceived->count() . ' barang telah diterima.',
+                'data' => [
+                    'received_ids' => $unreceived->pluck('id')->toArray(),
+                    'scanned_at' => $now->format('H:i:s'),
+                    'received_count' => $totalCount,
+                    'total_count' => $totalCount,
+                    'is_completed' => true
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
+        }
     }
     public function updateLokasiOtomatis(Request $request)
     {
