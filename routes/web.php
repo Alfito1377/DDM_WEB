@@ -15,7 +15,7 @@ use App\Http\Controllers\ChatController;
 Route::get('/', function () {
     if (Auth::check()) {
         $roleName = strtolower(Auth::user()->role->role_name ?? '');
-        if ($roleName === 'superadmin') return redirect('/superadmin/register-toko');
+        if ($roleName === 'superadmin') return redirect('/superadmin/dashboard-logistik');
         if ($roleName === 'admin') return redirect('/admin/dashboard');
         if ($roleName === 'toko') return redirect('/toko/penerimaan');
         if ($roleName === 'pekerja_lapang') return redirect('/lapangan/retur');

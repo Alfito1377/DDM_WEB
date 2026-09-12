@@ -13,6 +13,7 @@ class StoresModel extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'id_stores_wms',
         'jenis_mitra_id',
         'store_name',
         'owner_name',

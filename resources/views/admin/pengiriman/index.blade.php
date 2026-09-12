@@ -204,6 +204,12 @@
                 <div class="alert alert-warning" role="alert">
                     {{ $process_status['fetch_data']['msg'] }}
                 </div>
+                <script>
+                    let params = new URLSearchParams(window.location.search);
+                    params.delete('fetch_data'); 
+                    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+                    window.history.replaceState(null, '', newUrl);
+                </script>
             @endif
 
 
@@ -248,7 +254,7 @@
 
                             <th scope="col" class="px-6 py-4 font-bold whitespace-nowrap">
 
-                                Tujuan & Waktu Berangkat
+                                Nomor Dokumen & Waktu Berangkat
 
                             </th>
 
@@ -310,7 +316,7 @@
 
                                     <div class="font-bold text-gray-800 text-base mb-1 whitespace-nowrap">
 
-                                        {{ $logistic->destination ?? '-' }}
+                                        {{ $logistic->doNumber ?? '-' }}
 
                                     </div>
 

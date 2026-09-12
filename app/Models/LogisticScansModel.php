@@ -16,6 +16,10 @@ class LogisticScansModel extends Model
         'logistic_id',
         'sack_id',
         'barcode',
+        'itemCode',
+        'itemName',
+        'weightKg',
+        'palletCode',
         'departed_at',
         'received_at',
     ];

@@ -30,6 +30,9 @@
         </div>
     </main>
 
+    <!-- Sweet Alert Library -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('mobile-sidebar');

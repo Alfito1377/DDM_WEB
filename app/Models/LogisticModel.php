@@ -15,6 +15,8 @@ class LogisticModel extends Model
     protected $fillable = [
         'id_logistic',
         'shipmentId',
+        'shipmentNumber',
+        'doNumber',
         'status',
         'id_mitra',
         'destination',
