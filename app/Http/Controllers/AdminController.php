@@ -350,7 +350,7 @@ class AdminController extends Controller
             }
 
             $pass = "sage1234";
-            if($request->password == null) {
+            if ($request->password == null) {
                 $pass = $request->password;
             }
 
@@ -434,7 +434,7 @@ class AdminController extends Controller
         $query = LogisticModel::latest();
 
         if ($request->fetch_data == 'true') {
-            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . 'internal/logistics/active');
+            $wms_data = Http::withToken(config('services.wms.token'))->get(config('services.wms.url') . '/internal/logistics/active');
             if ($wms_data->successful()) {
                 $data_fetching = $wms_data->json();
                 DB::beginTransaction();
@@ -490,8 +490,8 @@ class AdminController extends Controller
                             $validate_logistic = LogisticModel::create([
                                 'id_logistic' => $data['id'],
                                 'shipmentId' => $data['shipmentId'],
-                                'shipmentNumber'=> $data['shipmentNumber'],
-                                'doNumber'=> $data['doNumber'],
+                                'shipmentNumber' => $data['shipmentNumber'],
+                                'doNumber' => $data['doNumber'],
                                 'status' => $data['status'],
                                 'id_mitra' => $validate_store->id,
                                 'destination' => '-',
