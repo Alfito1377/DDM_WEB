@@ -930,6 +930,9 @@
           const unreceivedCount = getUnreceivedCount();
 
           if (!matchingUnreceived) {
+            // Perpanjang cooldown 5 detik untuk kasus warning/error
+            // agar Toast tidak spam saat kamera terus mengarah ke barcode yang sama
+            lastScanTime = now + (5000 - SCAN_COOLDOWN_MS);
             if (matchingReceived) {
               playAudioWarning();
               Toast.fire({ icon: 'warning', title: 'Semua barang dengan barcode ini sudah diterima!' });
