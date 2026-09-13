@@ -49,13 +49,13 @@ class KnowledgeBaseController extends Controller
                     'title' => $file->getClientOriginalName(),
                     'file_path' => $filePath,
                     'file_type' => $file->getClientOriginalExtension(),
-                    'category' => 'umum', // <--- Ubah menjadi teks statis agar tidak error di database
+                    'category' => 'umum', 
                     'file_size' => $file->getSize(),
                     'description' => $request->description ?? '',
                     'uploaded_by' => Auth::user()->id,
                 ]);
 
-                // Kirim lokasi file absolut ke FastAPI (Port 8001)
+                // Kirim lokasi file absolut ke FastAPI (Port 8001) (iki diganti yaa)
                 $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8001') . '/webhook/document';
 
                 $response = Http::timeout(120)->post($aiServiceUrl, [
@@ -76,5 +76,26 @@ class KnowledgeBaseController extends Controller
             ->get();
 
         return view('toko.panduan', compact('documents'));
+    }
+    /**
+     * Menghapus dokumen yang dipilih
+     */
+    public function destroy($id)
+    {
+        try {
+            $document = KnowledgeBase::findOrFail($id);
+
+            // Hapus file fisik dari storage public
+            if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+                Storage::disk('public')->delete($document->file_path);
+            }
+
+            // Hapus data dari database MySQL
+            $document->delete();
+
+            return back()->with('success', 'Dokumen berhasil dihapus dari sistem.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus dokumen: ' . $e->getMessage());
+        }
     }
 }

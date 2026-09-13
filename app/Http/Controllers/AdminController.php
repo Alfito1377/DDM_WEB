@@ -804,4 +804,57 @@ class AdminController extends Controller
 
         return back()->with('success', 'Reset lokasi disetujui. Toko sekarang harus mengatur ulang lokasinya.');
     }
+    /**
+     * Sinkronisasi Data Pengiriman dari WMS
+     */
+    /**
+     * Sinkronisasi Data Pengiriman dari WMS
+     */
+    /**
+     * Sinkronisasi Data Pengiriman dari WMS
+     */
+   public function syncDataWms(Request $request)
+    {
+        try {
+            $apiUrl = config('services.whs.url') . '/internal/logistics/active'; 
+            $apiToken = config('services.whs.token');
+
+            $response = Http::withToken($apiToken)->timeout(30)->get($apiUrl);
+
+            if ($response->successful()) {
+                $wmsData = $response->json();
+                $pengirimanList = $wmsData['items'] ?? [];
+
+                foreach ($pengirimanList as $item) {
+                    LogisticModel::updateOrCreate(
+                        ['id_logistic' => (string) ($item['id'] ?? null)], 
+                        [
+                            'shipmentId'  => $item['shipmentId'] ?? null,
+                            'destination' => $item['destination'] ?? null,
+                            'status'      => $item['status'] ?? 'pending',
+                            'departedAt'  => $item['departedAt'] ?? null,
+                        ]
+                    );
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => count($pengirimanList) . ' data pengiriman aktif berhasil diperbarui dari WMS.'
+                ]);
+            }
+
+            Log::error('API WMS Error: ' . $response->body());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menarik data dari WMS. Periksa permission token Anda.'
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('Error Sinkronisasi WMS: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem saat menghubungi WMS.'
+            ], 500);
+        }
+    }
 }

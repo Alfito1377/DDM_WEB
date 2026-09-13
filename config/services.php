@@ -35,11 +35,8 @@ return [
         ],
     ],
 
-    'sage' => [
-        'url' => env('SAGE_API_URL', 'https://app.sage.biz.id/api'),
-        'email' => env('SAGE_API_EMAIL'),
-        'password' => env('SAGE_API_PASSWORD'),
-    ],
+
+
 
     'wms' => [
         'url' => env('WMS_API_URL'),

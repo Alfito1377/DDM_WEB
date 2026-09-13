@@ -780,7 +780,7 @@
         function openFetchModal() {
             Swal.fire({
                 title: "Memperbarui Data",
-                text: "Apakah anda ingin mengambil data pengiriman terbaru?",
+                text: "Apakah anda ingin mengambil data pengiriman terbaru dari WMS?",
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: "Ya, Perbarui!",
@@ -796,7 +796,6 @@
                 };
             });
         }
-
 
         function openLogisticModal(logisticId) {
 

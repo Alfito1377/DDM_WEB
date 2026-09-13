@@ -11,6 +11,7 @@ use App\Services\SageApiService;
 use App\Http\Controllers\Api\ForecastingController;
 use App\Http\Controllers\ChatController;
 
+
 // 1. LOGIN & AUTH
 Route::get('/', function () {
     if (Auth::check()) {
@@ -89,6 +90,8 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         })->name('superadmin.dashboard');
         Route::get('/permintaan-reset-lokasi', [AdminController::class, 'daftarResetLokasi']);
         Route::post('/setujui-reset-lokasi/{id}', [AdminController::class, 'setujuiReset']);
+        Route::post('/pengiriman/sync', [AdminController::class, 'syncDataWms'])->name('pengiriman.sync');
+        Route::delete('/unggah-data/{id}', [KnowledgeBaseController::class, 'destroy']);
     });
 
     // RUTE PREFIX ADMIN
@@ -118,6 +121,7 @@ Route::middleware(['auth', 'role:superadmin,admin'])->group(function () {
         })->name('admin.dashboard');
         Route::get('/permintaan-reset-lokasi', [AdminController::class, 'daftarResetLokasi']);
         Route::post('/setujui-reset-lokasi/{id}', [AdminController::class, 'setujuiReset']);
+        Route::delete('/unggah-data/{id}', [KnowledgeBaseController::class, 'destroy']);
     });
 });
 
