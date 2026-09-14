@@ -46,4 +46,8 @@ return [
         'token' => env('WMS_API_TOKEN'),
     ],
 
+    'chatbot' => [
+        'url' => env('CHATBOT_API_URL'),
+        'token' => env('CHATBOT_API_TOKEN'),
+    ],
 ];

@@ -15,8 +15,8 @@ class ChatController extends Controller
         ]);
 
         try {
-            $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8000') . '/chat';
-            
+            $aiServiceUrl = config('services.chatbot.url', 'http://127.0.0.1:8000') . '/chat';
+
             $response = Http::timeout(180)->post($aiServiceUrl, [
                 'pertanyaan' => $request->pertanyaan
             ]);
@@ -30,7 +30,6 @@ class ChatController extends Controller
                     'sumber' => 'Error'
                 ], 500);
             }
-
         } catch (\Exception $e) {
             Log::error('Koneksi ke AI Service Gagal: ' . $e->getMessage());
             return response()->json([
